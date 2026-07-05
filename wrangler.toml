@@ -1,0 +1,13 @@
+name = "xiumi-r2-image-host"
+main = "cloudflare-r2-worker.js"
+compatibility_date = "2026-07-01"
+workers_dev = true
+
+[[r2_buckets]]
+binding = "IMAGES_BUCKET"
+bucket_name = "xiumi-images"
+
+[vars]
+DEFAULT_PREFIX = "xiumi"
+MAX_BYTES = "20971520"
+ALLOWED_ORIGIN = "*"

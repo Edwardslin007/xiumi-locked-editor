@@ -1,0 +1,10 @@
+node_modules/
+.wrangler/
+.dev.vars
+*.log
+*.tmp
+*.bak
+dist/
+downloads/
+exports/
+xiumi_exports/

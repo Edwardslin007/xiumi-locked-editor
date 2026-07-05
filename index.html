@@ -1,0 +1,2798 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="referrer" content="no-referrer">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>秀米样式锁定编辑器</title>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <style>
+    :root {
+      --bg: #f6f7f9;
+      --panel: #ffffff;
+      --panel-soft: #fafafa;
+      --line: #d8dde6;
+      --line-strong: #b8c0cc;
+      --text: #20242b;
+      --muted: #69727f;
+      --accent: #e73a30;
+      --accent-soft: #fff0ee;
+      --green: #10a66f;
+      --focus: #2563eb;
+      --shadow: 0 12px 34px rgba(28, 35, 45, 0.12);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      overflow: hidden;
+    }
+
+    button,
+    input,
+    textarea,
+    select {
+      font: inherit;
+    }
+
+    button {
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--text);
+      height: 34px;
+      border-radius: 6px;
+      padding: 0 11px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    button:hover {
+      border-color: var(--line-strong);
+      background: var(--panel-soft);
+    }
+
+    button.primary {
+      border-color: var(--green);
+      background: var(--green);
+      color: #fff;
+    }
+
+    button.primary:hover {
+      filter: brightness(0.96);
+    }
+
+    button.danger {
+      border-color: #f2b9b5;
+      color: #a82018;
+      background: #fff7f6;
+    }
+
+    button.icon {
+      width: 34px;
+      padding: 0;
+    }
+
+    button.active {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      color: #a82018;
+    }
+
+    button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    svg {
+      width: 17px;
+      height: 17px;
+      stroke-width: 2;
+      flex: 0 0 auto;
+    }
+
+    .app {
+      height: 100vh;
+      display: grid;
+      grid-template-rows: 56px 1fr;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 18px;
+      border-bottom: 1px solid var(--line);
+      background: #fff;
+      min-width: 0;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      min-width: 190px;
+      font-weight: 700;
+      font-size: 17px;
+    }
+
+    .brand-mark {
+      width: 26px;
+      height: 26px;
+      border-radius: 7px;
+      background:
+        linear-gradient(135deg, #e73a30 0 48%, transparent 48%),
+        linear-gradient(45deg, #10a66f 0 48%, #f0c24b 48% 100%);
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      flex: 1;
+    }
+
+    .draft-link {
+      margin-left: auto;
+      color: var(--focus);
+      text-decoration: none;
+      border: 1px solid #bfd0ff;
+      background: #f5f8ff;
+      height: 34px;
+      border-radius: 6px;
+      padding: 0 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .project-path-chip {
+      max-width: 240px;
+      min-width: 112px;
+      border: 1px solid #d7eadf;
+      background: #f4fbf7;
+      color: #245f3d;
+      height: 34px;
+      border-radius: 6px;
+      padding: 0 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .project-path-chip.empty {
+      border-color: var(--line);
+      background: #fff;
+      color: var(--muted);
+    }
+
+    .project-path-chip span {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .status {
+      min-width: 180px;
+      color: var(--muted);
+      font-size: 13px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .main {
+      --source-col: minmax(300px, 30vw);
+      --image-col: minmax(360px, 27vw);
+      min-height: 0;
+      display: grid;
+      grid-template-columns: var(--source-col) minmax(430px, 1fr) var(--image-col);
+      transition: grid-template-columns 0.18s ease;
+    }
+
+    .app.source-collapsed .main {
+      --source-col: 46px;
+    }
+
+    .app.image-collapsed .main {
+      --image-col: 46px;
+    }
+
+    .source-panel,
+    .preview-panel,
+    .image-panel {
+      min-height: 0;
+      border-right: 1px solid var(--line);
+      background: var(--panel);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .image-panel {
+      border-right: 0;
+    }
+
+    .source-panel,
+    .image-panel {
+      position: relative;
+      min-width: 0;
+    }
+
+    .collapse-rail {
+      display: none;
+      width: 100%;
+      height: 100%;
+      border: 0;
+      border-radius: 0;
+      background: #fff;
+      color: var(--muted);
+      padding: 0;
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+      letter-spacing: 2px;
+      font-weight: 700;
+    }
+
+    .app.source-collapsed .source-panel > :not(.collapse-rail),
+    .app.image-collapsed .image-panel > :not(.collapse-rail) {
+      display: none;
+    }
+
+    .app.source-collapsed .source-panel,
+    .app.image-collapsed .image-panel {
+      border-right: 1px solid var(--line);
+      overflow: hidden;
+    }
+
+    .app.source-collapsed .source-panel .collapse-rail,
+    .app.image-collapsed .image-panel .collapse-rail {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .panel-head {
+      height: 45px;
+      padding: 0 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      border-bottom: 1px solid var(--line);
+      flex: 0 0 auto;
+    }
+
+    .panel-title {
+      font-size: 14px;
+      font-weight: 700;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .panel-tools {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      min-width: 0;
+    }
+
+    .source-box {
+      min-height: 0;
+      flex: 1;
+      width: 100%;
+      resize: none;
+      border: 0;
+      padding: 14px;
+      color: #242a31;
+      background: #fbfcfe;
+      outline: none;
+      line-height: 1.5;
+      font-family: Consolas, "SFMono-Regular", Menlo, monospace;
+      font-size: 12px;
+    }
+
+    .source-box[readonly] {
+      color: #5e6672;
+      background:
+        repeating-linear-gradient(
+          -45deg,
+          #fbfcfe 0,
+          #fbfcfe 12px,
+          #f5f7fb 12px,
+          #f5f7fb 24px
+        );
+    }
+
+    .source-footer,
+    .image-footer {
+      height: 34px;
+      padding: 0 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 12px;
+      flex: 0 0 auto;
+    }
+
+    .preview-shell {
+      min-height: 0;
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      overflow: auto;
+      padding: 26px 18px 40px;
+      background:
+        linear-gradient(90deg, rgba(0, 0, 0, 0.025) 1px, transparent 1px),
+        linear-gradient(0deg, rgba(0, 0, 0, 0.025) 1px, transparent 1px);
+      background-size: 18px 18px;
+    }
+
+    .phone-canvas {
+      width: min(100%, 430px);
+      height: max-content;
+      min-height: 680px;
+      background: #fff;
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+    }
+
+    .preview-frame {
+      display: block;
+      width: 100%;
+      height: 720px;
+      min-height: 720px;
+      border: 0;
+      background: #fff;
+    }
+
+    .empty-preview {
+      height: 100%;
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      text-align: center;
+      padding: 24px;
+      line-height: 1.7;
+    }
+
+    .image-list {
+      min-height: 0;
+      flex: 1;
+      overflow: auto;
+      padding: 12px;
+      display: grid;
+      gap: 10px;
+      align-content: start;
+      background: #fbfcfe;
+    }
+
+    .image-item {
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 8px;
+      overflow: visible;
+    }
+
+    .image-item.active {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(231, 58, 48, 0.22), 0 10px 24px rgba(231, 58, 48, 0.16);
+    }
+
+    .image-item-head {
+      min-height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 7px 9px;
+      border-bottom: 1px solid var(--line);
+      background: var(--panel-soft);
+    }
+
+    .image-index {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .image-kind {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 400;
+    }
+
+    .image-body {
+      padding: 9px;
+      display: grid;
+      gap: 9px;
+    }
+
+    .thumb-row {
+      display: grid;
+      grid-template-columns: 118px 1fr;
+      gap: 9px;
+      align-items: start;
+    }
+
+    .thumb {
+      width: 118px;
+      height: 86px;
+      object-fit: contain;
+      background: #f1f3f6;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+    }
+
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 5px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .field {
+      display: grid;
+      gap: 4px;
+    }
+
+    .field label {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .field input,
+    .field textarea,
+    .field select {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      outline: none;
+      background: #fff;
+      min-width: 0;
+    }
+
+    .field input,
+    .field select {
+      height: 32px;
+      padding: 0 8px;
+    }
+
+    .field textarea {
+      min-height: 58px;
+      padding: 7px 8px;
+      resize: vertical;
+      line-height: 1.45;
+      word-break: break-all;
+    }
+
+    .field input:focus,
+    .field textarea:focus,
+    .field select:focus,
+    .editor-surface:focus {
+      border-color: var(--focus);
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12);
+    }
+
+    .image-actions {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    .image-actions button.uploading {
+      border-color: #f0c24b;
+      background: #fff9e6;
+      color: #8a5c00;
+    }
+
+    .image-footer {
+      justify-content: space-between;
+    }
+
+    .image-footer-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .file-input {
+      display: none;
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(20, 25, 33, 0.28);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+      padding: 24px;
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .editor-modal {
+      width: min(920px, 94vw);
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 28px 80px rgba(16, 24, 40, 0.28);
+      border: 1px solid var(--line);
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: auto auto minmax(220px, 44vh) auto;
+    }
+
+    .template-modal {
+      width: min(1120px, 94vw);
+      height: min(760px, 88vh);
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 28px 80px rgba(16, 24, 40, 0.28);
+      border: 1px solid var(--line);
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+
+    .host-modal {
+      width: min(720px, 94vw);
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 28px 80px rgba(16, 24, 40, 0.28);
+      border: 1px solid var(--line);
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+    }
+
+    .host-body {
+      padding: 16px;
+      display: grid;
+      gap: 12px;
+      background: #fbfcfe;
+    }
+
+    .host-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .host-note {
+      border: 1px solid #d7eadf;
+      background: #f4fbf7;
+      color: #315f45;
+      border-radius: 6px;
+      padding: 10px 12px;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .host-actions {
+      min-height: 52px;
+      padding: 9px 16px;
+      border-top: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      background: #fff;
+    }
+
+    .host-status {
+      color: var(--muted);
+      font-size: 13px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .template-body {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 260px 1fr;
+    }
+
+    .template-list {
+      min-height: 0;
+      overflow: auto;
+      border-right: 1px solid var(--line);
+      background: #fbfcfe;
+      padding: 10px;
+      display: grid;
+      gap: 8px;
+      align-content: start;
+    }
+
+    .template-item {
+      height: auto;
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 8px;
+      padding: 9px 10px;
+      cursor: pointer;
+      display: grid;
+      gap: 4px;
+      text-align: left;
+      justify-content: stretch;
+      align-items: stretch;
+    }
+
+    .template-item:hover {
+      border-color: var(--line-strong);
+    }
+
+    .template-item.active {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(231, 58, 48, 0.13);
+    }
+
+    .template-item-title {
+      font-weight: 700;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .template-item-meta {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .template-editor {
+      min-height: 0;
+      padding: 12px;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 10px;
+    }
+
+    .template-source {
+      width: 100%;
+      height: 100%;
+      min-height: 360px;
+      resize: none;
+      font-family: Consolas, "SFMono-Regular", Menlo, monospace;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .template-actions {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      border-top: 1px solid var(--line);
+      padding-top: 10px;
+    }
+
+    .editor-head {
+      min-height: 46px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 0 14px;
+      border-bottom: 1px solid var(--line);
+      background: #fff;
+    }
+
+    .editor-title {
+      font-weight: 700;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .toolbar {
+      min-height: 48px;
+      padding: 7px 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      border-bottom: 1px solid var(--line);
+      background: #fbfcfe;
+    }
+
+    .toolbar input[type="color"] {
+      width: 34px;
+      height: 34px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+      padding: 3px;
+      cursor: pointer;
+    }
+
+    .toolbar select {
+      height: 34px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+      padding: 0 8px;
+    }
+
+    .editor-surface {
+      margin: 14px;
+      padding: 18px;
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      outline: none;
+      line-height: 1.8;
+      background: #fff;
+      color: #222;
+      font-size: 17px;
+    }
+
+    .editor-actions {
+      min-height: 50px;
+      padding: 8px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      border-top: 1px solid var(--line);
+      background: #fff;
+    }
+
+    .text-chip {
+      height: 28px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 0 9px;
+      color: var(--muted);
+      font-size: 12px;
+      display: inline-flex;
+      align-items: center;
+      max-width: 360px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    @media (max-width: 1180px) {
+      body {
+        overflow: auto;
+      }
+
+      .app {
+        height: auto;
+        min-height: 100vh;
+      }
+
+      .main {
+        grid-template-columns: 1fr;
+      }
+
+      .source-panel,
+      .preview-panel,
+      .image-panel {
+        min-height: 460px;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .topbar {
+        height: auto;
+        min-height: 56px;
+        flex-wrap: wrap;
+        padding-block: 10px;
+      }
+
+      .draft-link {
+        margin-left: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="appRoot" class="app">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark"></span>
+        <span>秀米样式锁定编辑器</span>
+      </div>
+      <div class="top-actions">
+        <button id="sampleLoadBtn" type="button"><i data-lucide="file-input"></i>载入示例</button>
+        <button id="templateBtn" type="button"><i data-lucide="layers"></i>源码模板</button>
+        <button id="imageHostBtn" type="button"><i data-lucide="cloud-upload"></i>图床设置</button>
+        <button id="sampleCopyBtn" type="button"><i data-lucide="copy"></i>复制示例源码</button>
+        <button id="undoBtn" class="icon" type="button" title="撤销"><i data-lucide="undo-2"></i></button>
+        <button id="redoBtn" class="icon" type="button" title="重做"><i data-lucide="redo-2"></i></button>
+        <button id="copyBtn" class="primary" type="button"><i data-lucide="clipboard-copy"></i>一键复制源码</button>
+        <button id="saveBtn" type="button"><i data-lucide="download"></i>保存源码文件</button>
+        <button id="projectFolderBtn" type="button"><i data-lucide="folder-check"></i>项目文件夹</button>
+        <button id="projectPathChip" class="project-path-chip empty" type="button" title="点击复制项目路径">
+          <i data-lucide="copy"></i><span id="projectPathText">未选择项目文件夹</span>
+        </button>
+        <a class="draft-link" href="https://mp.weixin.qq.com/cgi-bin/appmsg?begin=0&count=10&type=77&action=list_card&token=1255399380&lang=zh_CN" target="_blank" rel="noreferrer">
+          <i data-lucide="external-link"></i>公众号草稿箱
+        </a>
+      </div>
+      <div id="status" class="status">等待粘贴源码</div>
+    </header>
+
+    <main class="main">
+      <section class="source-panel">
+        <button id="expandSourceBtn" class="collapse-rail" type="button" title="展开源码栏">展开源码</button>
+        <div class="panel-head">
+          <div class="panel-title">源码粘贴框</div>
+          <div class="panel-tools">
+            <button id="collapseSourceBtn" class="icon" type="button" title="收纳源码栏"><i data-lucide="panel-left-close"></i></button>
+            <button id="unlockBtn" type="button"><i data-lucide="unlock"></i>重新粘贴</button>
+            <button id="clearBtn" class="danger" type="button"><i data-lucide="trash-2"></i>清空</button>
+          </div>
+        </div>
+        <textarea id="sourceBox" class="source-box" spellcheck="false" placeholder="把秀米编辑器复制出来的 HTML 或富文本粘贴到这里"></textarea>
+        <div class="source-footer">
+          <span id="sourceState">未锁定</span>
+          <span id="structureState"></span>
+        </div>
+      </section>
+
+      <section class="preview-panel">
+        <div class="panel-head">
+          <div class="panel-title">公众号排版预览</div>
+          <div class="panel-tools">
+            <button id="refreshBtn" type="button"><i data-lucide="refresh-cw"></i>刷新</button>
+          </div>
+        </div>
+        <div class="preview-shell">
+          <div class="phone-canvas">
+            <div id="emptyPreview" class="empty-preview">粘贴后显示完整排版</div>
+            <iframe id="previewFrame" class="preview-frame hidden" title="公众号排版预览"></iframe>
+          </div>
+        </div>
+      </section>
+
+      <section class="image-panel">
+        <button id="expandImageBtn" class="collapse-rail" type="button" title="展开图片栏">展开图片</button>
+        <div class="panel-head">
+          <div class="panel-title">图片编辑框</div>
+          <div class="panel-tools">
+            <button id="collapseImageBtn" class="icon" type="button" title="收纳图片栏"><i data-lucide="panel-right-close"></i></button>
+            <button id="locateFirstImageBtn" type="button"><i data-lucide="image"></i>定位首图</button>
+          </div>
+        </div>
+        <div id="imageList" class="image-list"></div>
+        <div class="image-footer">
+          <span id="imageState">0 张图片</span>
+          <div class="image-footer-actions">
+            <button id="batchUploadBtn" type="button"><i data-lucide="cloud-upload"></i>批量上传图床</button>
+            <button id="imageHostFooterBtn" type="button"><i data-lucide="settings"></i>设置</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="editorBackdrop" class="modal-backdrop" role="dialog" aria-modal="true">
+    <div class="editor-modal">
+      <div class="editor-head">
+        <div id="editorTitle" class="editor-title">文字编辑</div>
+        <button id="closeEditorBtn" class="icon" type="button" title="关闭"><i data-lucide="x"></i></button>
+      </div>
+      <div class="toolbar" id="toolbar">
+        <button data-cmd="bold" class="icon" type="button" title="加粗"><i data-lucide="bold"></i></button>
+        <button data-cmd="italic" class="icon" type="button" title="斜体"><i data-lucide="italic"></i></button>
+        <button data-cmd="underline" class="icon" type="button" title="下划线"><i data-lucide="underline"></i></button>
+        <input id="colorInput" type="color" value="#e73a30" title="文字颜色">
+        <select id="fontSizeSelect" title="字号">
+          <option value="12">12px</option>
+          <option value="14">14px</option>
+          <option value="16">16px</option>
+          <option value="17" selected>17px</option>
+          <option value="18">18px</option>
+          <option value="20">20px</option>
+          <option value="22">22px</option>
+          <option value="24">24px</option>
+          <option value="28">28px</option>
+          <option value="32">32px</option>
+        </select>
+        <button data-align="left" class="icon" type="button" title="靠左"><i data-lucide="align-left"></i></button>
+        <button data-align="center" class="icon" type="button" title="居中"><i data-lucide="align-center"></i></button>
+        <button data-align="right" class="icon" type="button" title="靠右"><i data-lucide="align-right"></i></button>
+        <button data-align="justify" class="icon" type="button" title="两端对齐"><i data-lucide="align-justify"></i></button>
+      </div>
+      <div id="editorSurface" class="editor-surface" contenteditable="true"></div>
+      <div class="editor-actions">
+        <span id="editorMeta" class="text-chip">未选择段落</span>
+        <div class="panel-tools">
+          <button id="cancelEditBtn" type="button">取消</button>
+          <button id="saveEditBtn" class="primary" type="button"><i data-lucide="check"></i>保存</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="templateBackdrop" class="modal-backdrop" role="dialog" aria-modal="true">
+    <div class="template-modal">
+      <div class="editor-head">
+        <div class="editor-title">源码模板</div>
+        <button id="closeTemplateBtn" class="icon" type="button" title="关闭"><i data-lucide="x"></i></button>
+      </div>
+      <div class="template-body">
+        <div id="templateList" class="template-list"></div>
+        <div class="template-editor">
+          <div class="field">
+            <label>模板名称</label>
+            <input id="templateNameInput" placeholder="模板名称">
+          </div>
+          <div class="field">
+            <label>模板源码</label>
+            <textarea id="templateSourceInput" class="template-source" spellcheck="false" placeholder="点击左侧模板后，在这里编辑源码"></textarea>
+          </div>
+          <div class="template-actions">
+            <button id="newTemplateBtn" type="button"><i data-lucide="plus"></i>新建模板源码</button>
+            <button id="deleteTemplateBtn" class="danger" type="button"><i data-lucide="trash-2"></i>删除模板</button>
+            <button id="saveTemplateBtn" class="primary" type="button"><i data-lucide="save"></i>保存模板</button>
+            <button id="loadTemplateBtn" type="button"><i data-lucide="file-input"></i>载入指定模板</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="imageHostBackdrop" class="modal-backdrop" role="dialog" aria-modal="true">
+    <div class="host-modal">
+      <div class="editor-head">
+        <div class="editor-title">Cloudflare R2 图床设置</div>
+        <button id="closeImageHostBtn" class="icon" type="button" title="关闭"><i data-lucide="x"></i></button>
+      </div>
+      <div class="host-body">
+        <div class="field">
+          <label>Worker 地址</label>
+          <input id="hostWorkerUrlInput" placeholder="https://你的-worker.workers.dev">
+        </div>
+        <div class="host-grid">
+          <div class="field">
+            <label>上传密钥</label>
+            <input id="hostTokenInput" type="password" placeholder="Worker 环境变量 UPLOAD_TOKEN">
+          </div>
+          <div class="field">
+            <label>文件名前缀</label>
+            <input id="hostPrefixInput" placeholder="xiumi">
+          </div>
+        </div>
+        <div class="host-note">
+          密钥只保存在当前浏览器本地。真正的 R2 账号密钥放在 Cloudflare Worker 后台，不写进这个网页源码。
+        </div>
+      </div>
+      <div class="host-actions">
+        <span id="hostStatus" class="host-status">未配置</span>
+        <div class="panel-tools">
+          <button id="testImageHostBtn" type="button"><i data-lucide="wifi"></i>测试连接</button>
+          <button id="saveImageHostBtn" class="primary" type="button"><i data-lucide="save"></i>保存设置</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="projectFolderBackdrop" class="modal-backdrop" role="dialog" aria-modal="true">
+    <div class="host-modal">
+      <div class="editor-head">
+        <div class="editor-title">项目文件夹保存设置</div>
+        <button id="closeProjectFolderBtn" class="icon" type="button" title="关闭"><i data-lucide="x"></i></button>
+      </div>
+      <div class="host-body">
+        <div class="field">
+          <label>项目文件夹路径</label>
+          <input id="projectFolderPathInput" placeholder="例如 D:\\WPS_Share\\AI\\秀米编辑器\\exports">
+        </div>
+        <div class="host-grid">
+          <div class="field">
+            <label>源码文件名前缀</label>
+            <input id="projectFilePrefixInput" placeholder="xiumi-edited">
+          </div>
+          <div class="field">
+            <label>当前浏览器文件夹授权</label>
+            <input id="projectHandleStateInput" readonly value="未选择">
+          </div>
+        </div>
+        <div class="host-note">
+          浏览器不会直接暴露电脑完整路径。先点“选择文件夹”给网页保存权限，再在上方确认或填写用于显示和复制的项目路径。
+        </div>
+      </div>
+      <div class="host-actions">
+        <span id="projectFolderStatus" class="host-status">未选择项目文件夹</span>
+        <div class="panel-tools">
+          <button id="chooseProjectFolderBtn" type="button"><i data-lucide="folder-open"></i>选择文件夹</button>
+          <button id="saveProjectFolderBtn" class="primary" type="button"><i data-lucide="check"></i>确认路径</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SOURCE_SAMPLE_PATH = 'examples/sample-xiumi.html';
+    const DRAFT_URL = 'https://mp.weixin.qq.com/cgi-bin/appmsg?begin=0&count=10&type=77&action=list_card&token=1255399380&lang=zh_CN';
+    const TEMPLATE_STORAGE_KEY = 'xiumi_locked_editor_templates_v1';
+    const IMAGE_HOST_STORAGE_KEY = 'xiumi_image_host_config_v1';
+    const PROJECT_FOLDER_STORAGE_KEY = 'xiumi_project_folder_config_v1';
+    const PROJECT_HANDLE_DB = 'xiumi-project-folder-db';
+    const PROJECT_HANDLE_STORE = 'handles';
+    const helperAttrText = 'data-xe-text-id';
+    const helperAttrImage = 'data-xe-img-id';
+    const helperOriginal = 'data-xe-original-text';
+
+    const dom = {
+      appRoot: document.getElementById('appRoot'),
+      sourceBox: document.getElementById('sourceBox'),
+      sourceState: document.getElementById('sourceState'),
+      structureState: document.getElementById('structureState'),
+      status: document.getElementById('status'),
+      previewFrame: document.getElementById('previewFrame'),
+      emptyPreview: document.getElementById('emptyPreview'),
+      imageList: document.getElementById('imageList'),
+      imageState: document.getElementById('imageState'),
+      editorBackdrop: document.getElementById('editorBackdrop'),
+      editorTitle: document.getElementById('editorTitle'),
+      editorSurface: document.getElementById('editorSurface'),
+      editorMeta: document.getElementById('editorMeta'),
+      colorInput: document.getElementById('colorInput'),
+      fontSizeSelect: document.getElementById('fontSizeSelect'),
+      projectPathChip: document.getElementById('projectPathChip'),
+      projectPathText: document.getElementById('projectPathText')
+    };
+
+    const state = {
+      doc: null,
+      sourceLocked: false,
+      activeTextId: null,
+      activeImageId: null,
+      editingOriginalText: '',
+      editingOriginalHtml: '',
+      editAlignment: '',
+      debounceTimer: null,
+      templates: [],
+      activeTemplateId: '',
+      undoStack: [],
+      redoStack: [],
+      historyLimit: 60,
+      suppressHistory: false,
+      imageInputTimers: new Map(),
+      altInputTimers: new Map(),
+      imageHostConfig: {
+        workerUrl: '',
+        token: '',
+        prefix: 'xiumi'
+      },
+      projectFolderConfig: {
+        pathLabel: '',
+        filePrefix: 'xiumi-edited'
+      },
+      projectDirHandle: null
+    };
+
+    function setStatus(message) {
+      dom.status.textContent = message;
+    }
+
+    function makeIcons() {
+      if (window.lucide) {
+        window.lucide.createIcons();
+      }
+    }
+
+    function normalizeInputHtml(raw) {
+      const html = (raw || '').trim();
+      if (!html) return '';
+      const start = html.indexOf('<!--StartFragment-->');
+      const end = html.indexOf('<!--EndFragment-->');
+      if (start >= 0 && end > start) {
+        return html.slice(start + '<!--StartFragment-->'.length, end).trim();
+      }
+      return html;
+    }
+
+    function parseAndLock(rawHtml, options = {}) {
+      if (options.recordHistory !== false) {
+        recordHistory();
+      }
+      const normalized = normalizeInputHtml(rawHtml);
+      if (!normalized) {
+        clearWorkspace({ recordHistory: false });
+        return;
+      }
+
+      const parser = new DOMParser();
+      const parsed = parser.parseFromString(normalized, 'text/html');
+      const parserError = parsed.querySelector('parsererror');
+      if (parserError) {
+        setStatus('源码解析失败');
+        return;
+      }
+
+      setWorkingDocument(parsed);
+      setStatus('源码已锁定');
+    }
+
+    function setWorkingDocument(doc) {
+      state.doc = doc;
+      markEditableNodes(state.doc);
+      state.sourceLocked = true;
+      dom.sourceBox.value = getMarkedHtml();
+      dom.sourceBox.readOnly = true;
+      updateSourceState();
+      renderPreview();
+      renderImagePanel();
+      updateHistoryButtons();
+    }
+
+    function clearEditorMarks(root) {
+      root.querySelectorAll(`[${helperAttrText}], [${helperAttrImage}], [${helperOriginal}]`).forEach((node) => {
+        node.removeAttribute(helperAttrText);
+        node.removeAttribute(helperAttrImage);
+        node.removeAttribute(helperOriginal);
+      });
+    }
+
+    function markEditableNodes(doc) {
+      clearEditorMarks(doc);
+      const skipTags = new Set(['HTML', 'HEAD', 'BODY', 'SCRIPT', 'STYLE', 'SVG', 'PATH', 'BR', 'META', 'LINK']);
+      let textId = 0;
+      let imageId = 0;
+      const elements = Array.from(doc.body.querySelectorAll('*'));
+
+      for (const el of elements) {
+        if (skipTags.has(el.tagName)) continue;
+        const directText = Array.from(el.childNodes)
+          .filter((node) => node.nodeType === Node.TEXT_NODE)
+          .map((node) => node.nodeValue)
+          .join('')
+          .replace(/\s+/g, ' ')
+          .trim();
+        if (directText) {
+          textId += 1;
+          el.setAttribute(helperAttrText, String(textId));
+          el.setAttribute(helperOriginal, directText);
+        }
+      }
+
+      for (const img of doc.body.querySelectorAll('img')) {
+        imageId += 1;
+        img.setAttribute(helperAttrImage, String(imageId));
+      }
+    }
+
+    function getMarkedHtml() {
+      if (!state.doc) return '';
+      return state.doc.documentElement.outerHTML;
+    }
+
+    function getCleanHtml() {
+      if (!state.doc) return '';
+      const clone = state.doc.documentElement.cloneNode(true);
+      clearEditorMarks(clone);
+      clone.querySelectorAll('[data-xe-temp-insert]').forEach((node) => {
+        node.removeAttribute('data-xe-temp-insert');
+        if (!node.getAttribute('style')) node.removeAttribute('style');
+      });
+      return '<!doctype html>\n' + clone.outerHTML;
+    }
+
+    function getBodyText(html) {
+      const tmp = document.createElement('div');
+      tmp.innerHTML = html;
+      return (tmp.textContent || '').replace(/\s+/g, ' ').trim();
+    }
+
+    function getHistorySnapshot() {
+      return {
+        html: state.doc ? getCleanHtml() : '',
+        sourceLocked: state.sourceLocked,
+        sourceValue: dom.sourceBox.value,
+        templates: JSON.parse(JSON.stringify(state.templates || [])),
+        activeTemplateId: state.activeTemplateId
+      };
+    }
+
+    function hasMeaningfulSnapshot(snapshot) {
+      return Boolean(snapshot.html || snapshot.sourceValue || (snapshot.templates && snapshot.templates.length));
+    }
+
+    function recordHistory() {
+      if (state.suppressHistory) return;
+      const snapshot = getHistorySnapshot();
+      if (!hasMeaningfulSnapshot(snapshot)) return;
+      const last = state.undoStack[state.undoStack.length - 1];
+      if (
+        last &&
+        last.html === snapshot.html &&
+        last.sourceValue === snapshot.sourceValue &&
+        JSON.stringify(last.templates) === JSON.stringify(snapshot.templates) &&
+        last.activeTemplateId === snapshot.activeTemplateId
+      ) return;
+      state.undoStack.push(snapshot);
+      if (state.undoStack.length > state.historyLimit) {
+        state.undoStack.shift();
+      }
+      state.redoStack = [];
+      updateHistoryButtons();
+    }
+
+    function applySnapshot(snapshot) {
+      state.suppressHistory = true;
+      try {
+        if (snapshot.html) {
+          const parser = new DOMParser();
+          const parsed = parser.parseFromString(snapshot.html, 'text/html');
+          setWorkingDocument(parsed);
+        } else {
+          state.doc = null;
+          state.sourceLocked = snapshot.sourceLocked;
+          dom.sourceBox.value = snapshot.sourceValue || '';
+          dom.sourceBox.readOnly = snapshot.sourceLocked;
+          dom.imageList.innerHTML = '';
+          dom.imageState.textContent = '0 张图片';
+          updateSourceState();
+          renderPreview();
+        }
+        if (Array.isArray(snapshot.templates) && snapshot.templates.length) {
+          state.templates = JSON.parse(JSON.stringify(snapshot.templates));
+          state.activeTemplateId = snapshot.activeTemplateId || state.templates[0].id;
+          saveTemplatesToStorage();
+          if (document.getElementById('templateBackdrop')?.classList.contains('open')) {
+            renderTemplateList();
+            renderTemplateEditor();
+          }
+        }
+      } finally {
+        state.suppressHistory = false;
+        updateHistoryButtons();
+      }
+    }
+
+    function undo() {
+      if (!state.undoStack.length) return;
+      const current = getHistorySnapshot();
+      const previous = state.undoStack.pop();
+      if (hasMeaningfulSnapshot(current)) {
+        state.redoStack.push(current);
+      }
+      applySnapshot(previous);
+      setStatus('已撤销');
+    }
+
+    function redo() {
+      if (!state.redoStack.length) return;
+      const current = getHistorySnapshot();
+      const next = state.redoStack.pop();
+      if (hasMeaningfulSnapshot(current)) {
+        state.undoStack.push(current);
+      }
+      applySnapshot(next);
+      setStatus('已重做');
+    }
+
+    function updateHistoryButtons() {
+      const undoBtn = document.getElementById('undoBtn');
+      const redoBtn = document.getElementById('redoBtn');
+      if (undoBtn) undoBtn.disabled = state.undoStack.length === 0;
+      if (redoBtn) redoBtn.disabled = state.redoStack.length === 0;
+    }
+
+    function updateSourceState() {
+      dom.sourceState.textContent = state.sourceLocked ? '样式已锁定' : '未锁定';
+      if (!state.doc) {
+        dom.structureState.textContent = '';
+        return;
+      }
+      const sectionCount = state.doc.querySelectorAll('section').length;
+      const styleCount = state.doc.querySelectorAll('[style]').length;
+      const imgCount = state.doc.querySelectorAll('img').length;
+      const textCount = state.doc.querySelectorAll(`[${helperAttrText}]`).length;
+      dom.structureState.textContent = `section ${sectionCount} / style ${styleCount} / 文字 ${textCount} / 图片 ${imgCount}`;
+    }
+
+    function renderPreview() {
+      if (!state.doc) {
+        dom.previewFrame.classList.add('hidden');
+        dom.emptyPreview.classList.remove('hidden');
+        return;
+      }
+      dom.emptyPreview.classList.add('hidden');
+      dom.previewFrame.classList.remove('hidden');
+      dom.previewFrame.srcdoc = getPreviewHtml();
+    }
+
+    function getPreviewHtml() {
+      if (!state.doc) return '';
+      const clone = state.doc.documentElement.cloneNode(true);
+      clone.querySelectorAll('img').forEach((img) => {
+        img.setAttribute('referrerpolicy', 'no-referrer');
+      });
+      return clone.outerHTML;
+    }
+
+    function attachPreviewHandlers() {
+      const pdoc = dom.previewFrame.contentDocument;
+      if (!pdoc || !pdoc.body) return;
+
+      const style = pdoc.createElement('style');
+      style.textContent = `
+        [${helperAttrText}] {
+          cursor: text !important;
+          transition: outline-color .12s ease, background-color .12s ease;
+        }
+        [${helperAttrText}]:hover {
+          outline: 2px solid rgba(231, 58, 48, .65) !important;
+          outline-offset: 2px !important;
+          background-color: rgba(255, 240, 238, .55) !important;
+        }
+        [${helperAttrText}].xe-active-text {
+          outline: 2px solid #e73a30 !important;
+          outline-offset: 2px !important;
+        }
+        img[${helperAttrImage}] {
+          cursor: pointer !important;
+        }
+        img[${helperAttrImage}]:hover {
+          outline: 4px solid rgba(231, 58, 48, .9) !important;
+          outline-offset: 4px !important;
+          box-shadow: 0 0 0 7px rgba(255, 230, 0, .55), 0 0 0 11px rgba(231, 58, 48, .2) !important;
+        }
+        img.xe-active-image {
+          outline: 5px solid #e73a30 !important;
+          outline-offset: 5px !important;
+          box-shadow: 0 0 0 9px rgba(255, 230, 0, .72), 0 0 0 15px rgba(231, 58, 48, .24) !important;
+          filter: saturate(1.08) contrast(1.04) !important;
+          animation: xeImagePulse 1.1s ease-in-out 0s 2 !important;
+        }
+        @keyframes xeImagePulse {
+          0%, 100% {
+            outline-color: #e73a30;
+            box-shadow: 0 0 0 9px rgba(255, 230, 0, .72), 0 0 0 15px rgba(231, 58, 48, .24);
+          }
+          50% {
+            outline-color: #00a3ff;
+            box-shadow: 0 0 0 13px rgba(255, 230, 0, .9), 0 0 0 22px rgba(0, 163, 255, .22);
+          }
+        }
+      `;
+      pdoc.head.appendChild(style);
+
+      pdoc.querySelectorAll(`[${helperAttrText}]`).forEach((el) => {
+        el.addEventListener('click', (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          openTextEditor(el.getAttribute(helperAttrText));
+        });
+      });
+
+      pdoc.querySelectorAll(`img[${helperAttrImage}]`).forEach((img) => {
+        img.addEventListener('click', (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          selectImage(img.getAttribute(helperAttrImage), true);
+        });
+        img.addEventListener('load', syncFrameHeight);
+        img.addEventListener('error', syncFrameHeight);
+      });
+
+      syncFrameHeight();
+    }
+
+    function syncFrameHeight() {
+      const pdoc = dom.previewFrame.contentDocument;
+      if (!pdoc || !pdoc.body) return;
+      const height = Math.max(720, pdoc.documentElement.scrollHeight, pdoc.body.scrollHeight);
+      dom.previewFrame.style.height = `${height + 20}px`;
+    }
+
+    function getWorkingTextElement(id) {
+      return state.doc?.querySelector(`[${helperAttrText}="${CSS.escape(String(id))}"]`) || null;
+    }
+
+    function getPreviewTextElement(id) {
+      return dom.previewFrame.contentDocument?.querySelector(`[${helperAttrText}="${CSS.escape(String(id))}"]`) || null;
+    }
+
+    function getWorkingImageElement(id) {
+      return state.doc?.querySelector(`img[${helperAttrImage}="${CSS.escape(String(id))}"]`) || null;
+    }
+
+    function getPreviewImageElement(id) {
+      return dom.previewFrame.contentDocument?.querySelector(`img[${helperAttrImage}="${CSS.escape(String(id))}"]`) || null;
+    }
+
+    function openTextEditor(id) {
+      const el = getWorkingTextElement(id);
+      if (!el) return;
+
+      state.activeTextId = String(id);
+      state.editingOriginalText = el.getAttribute(helperOriginal) || (el.textContent || '');
+      state.editingOriginalHtml = el.innerHTML;
+      state.editAlignment = el.style.textAlign || '';
+
+      dom.editorTitle.textContent = `文字编辑 #${id}`;
+      dom.editorSurface.innerHTML = el.innerHTML;
+      dom.editorSurface.style.textAlign = state.editAlignment || '';
+      dom.editorMeta.textContent = state.editingOriginalText;
+      dom.editorBackdrop.classList.add('open');
+      markActiveText(id);
+
+      setTimeout(() => {
+        dom.editorSurface.focus();
+        placeCaretAtEnd(dom.editorSurface);
+      }, 0);
+    }
+
+    function markActiveText(id) {
+      const pdoc = dom.previewFrame.contentDocument;
+      if (!pdoc) return;
+      pdoc.querySelectorAll('.xe-active-text').forEach((el) => el.classList.remove('xe-active-text'));
+      const el = getPreviewTextElement(id);
+      if (el) {
+        el.classList.add('xe-active-text');
+        el.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'smooth' });
+      }
+    }
+
+    function closeTextEditor(revertPreview = true) {
+      if (revertPreview && state.activeTextId) {
+        const el = getPreviewTextElement(state.activeTextId);
+        const workingEl = getWorkingTextElement(state.activeTextId);
+        if (el && workingEl) {
+          el.innerHTML = workingEl.innerHTML;
+          el.setAttribute('style', workingEl.getAttribute('style') || '');
+        }
+      }
+      dom.editorBackdrop.classList.remove('open');
+      dom.editorSurface.innerHTML = '';
+      state.activeTextId = null;
+      state.editingOriginalText = '';
+      state.editingOriginalHtml = '';
+      state.editAlignment = '';
+      const pdoc = dom.previewFrame.contentDocument;
+      pdoc?.querySelectorAll('.xe-active-text').forEach((el) => el.classList.remove('xe-active-text'));
+      syncFrameHeight();
+    }
+
+    function placeCaretAtEnd(el) {
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      range.collapse(false);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+
+    function execInlineCommand(command, value = null) {
+      dom.editorSurface.focus();
+      document.execCommand('styleWithCSS', false, true);
+      document.execCommand(command, false, value);
+      normalizeFontTags(dom.editorSurface);
+      updateLivePreview();
+    }
+
+    function normalizeFontTags(container) {
+      container.querySelectorAll('font[color]').forEach((font) => {
+        const span = document.createElement('span');
+        span.style.color = font.getAttribute('color');
+        span.innerHTML = font.innerHTML;
+        font.replaceWith(span);
+      });
+      container.querySelectorAll('font[size]').forEach((font) => {
+        const span = document.createElement('span');
+        span.innerHTML = font.innerHTML;
+        font.replaceWith(span);
+      });
+    }
+
+    function wrapSelectionWithStyle(styleText) {
+      dom.editorSurface.focus();
+      const selection = window.getSelection();
+      if (!selection.rangeCount || !dom.editorSurface.contains(selection.anchorNode) || selection.isCollapsed) {
+        const span = document.createElement('span');
+        span.setAttribute('style', styleText);
+        span.innerHTML = dom.editorSurface.innerHTML || '<br>';
+        dom.editorSurface.innerHTML = '';
+        dom.editorSurface.appendChild(span);
+        updateLivePreview();
+        return;
+      }
+
+      const range = selection.getRangeAt(0);
+      const span = document.createElement('span');
+      span.setAttribute('style', styleText);
+      try {
+        span.appendChild(range.extractContents());
+        range.insertNode(span);
+        selection.removeAllRanges();
+        const nextRange = document.createRange();
+        nextRange.selectNodeContents(span);
+        nextRange.collapse(false);
+        selection.addRange(nextRange);
+      } catch (error) {
+        const fallback = document.createElement('span');
+        fallback.setAttribute('style', styleText);
+        fallback.textContent = selection.toString();
+        range.deleteContents();
+        range.insertNode(fallback);
+      }
+      updateLivePreview();
+    }
+
+    function applyAlignment(value) {
+      state.editAlignment = value;
+      dom.editorSurface.style.textAlign = value;
+      updateToolbarAlign(value);
+      updateLivePreview();
+    }
+
+    function updateToolbarAlign(value) {
+      document.querySelectorAll('[data-align]').forEach((btn) => {
+        btn.classList.toggle('active', btn.dataset.align === value);
+      });
+    }
+
+    function updateLivePreview() {
+      if (!state.activeTextId) return;
+      const previewEl = getPreviewTextElement(state.activeTextId);
+      if (!previewEl) return;
+      previewEl.innerHTML = htmlWithTempInsertions(dom.editorSurface.innerHTML, state.editingOriginalText);
+      previewEl.style.textAlign = state.editAlignment || '';
+      syncFrameHeight();
+    }
+
+    function htmlWithTempInsertions(html, originalPlain) {
+      const container = document.createElement('div');
+      container.innerHTML = html;
+      const plain = container.textContent || '';
+      const original = originalPlain || '';
+
+      if (!plain || plain === original) {
+        return container.innerHTML;
+      }
+
+      let prefix = 0;
+      const maxPrefix = Math.min(plain.length, original.length);
+      while (prefix < maxPrefix && plain[prefix] === original[prefix]) {
+        prefix++;
+      }
+
+      let suffix = 0;
+      while (
+        suffix < plain.length - prefix &&
+        suffix < original.length - prefix &&
+        plain[plain.length - 1 - suffix] === original[original.length - 1 - suffix]
+      ) {
+        suffix++;
+      }
+
+      const start = prefix;
+      const end = plain.length - suffix;
+      if (end <= start) {
+        return container.innerHTML;
+      }
+
+      wrapTextRange(container, start, end);
+      return container.innerHTML;
+    }
+
+    function wrapTextRange(root, start, end) {
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      const nodes = [];
+      let position = 0;
+      let node;
+      while ((node = walker.nextNode())) {
+        const length = node.nodeValue.length;
+        const nodeStart = position;
+        const nodeEnd = position + length;
+        if (nodeEnd > start && nodeStart < end) {
+          nodes.push({
+            node,
+            from: Math.max(0, start - nodeStart),
+            to: Math.min(length, end - nodeStart)
+          });
+        }
+        position = nodeEnd;
+      }
+
+      for (const item of nodes.reverse()) {
+        const { node: textNode, from, to } = item;
+        const text = textNode.nodeValue;
+        const frag = document.createDocumentFragment();
+        if (from > 0) frag.appendChild(document.createTextNode(text.slice(0, from)));
+        const span = document.createElement('span');
+        span.setAttribute('data-xe-temp-insert', '1');
+        span.style.color = '#e73a30';
+        span.textContent = text.slice(from, to);
+        frag.appendChild(span);
+        if (to < text.length) frag.appendChild(document.createTextNode(text.slice(to)));
+        textNode.parentNode.replaceChild(frag, textNode);
+      }
+    }
+
+    function cleanEditorHtml(html) {
+      const container = document.createElement('div');
+      container.innerHTML = html;
+      container.querySelectorAll('script, style').forEach((node) => node.remove());
+      container.querySelectorAll('[data-xe-temp-insert]').forEach((node) => {
+        node.removeAttribute('data-xe-temp-insert');
+      });
+      return container.innerHTML;
+    }
+
+    function saveTextEdit() {
+      if (!state.activeTextId) return;
+      const workingEl = getWorkingTextElement(state.activeTextId);
+      if (!workingEl) return;
+      recordHistory();
+      const cleanHtml = cleanEditorHtml(dom.editorSurface.innerHTML);
+      workingEl.innerHTML = cleanHtml;
+      if (state.editAlignment) {
+        workingEl.style.textAlign = state.editAlignment;
+      } else {
+        workingEl.style.removeProperty('text-align');
+      }
+      workingEl.setAttribute(helperOriginal, workingEl.textContent || '');
+      const previewEl = getPreviewTextElement(state.activeTextId);
+      if (previewEl) {
+        previewEl.innerHTML = workingEl.innerHTML;
+        previewEl.setAttribute('style', workingEl.getAttribute('style') || '');
+      }
+      closeTextEditor(false);
+      updateSourceState();
+      setStatus('文字已保存');
+    }
+
+    function renderImagePanel() {
+      dom.imageList.innerHTML = '';
+      if (!state.doc) {
+        dom.imageState.textContent = '0 张图片';
+        return;
+      }
+
+      const images = Array.from(state.doc.querySelectorAll(`img[${helperAttrImage}]`));
+      dom.imageState.textContent = `${images.length} 张图片`;
+      if (!images.length) {
+        const empty = document.createElement('div');
+        empty.className = 'empty-preview';
+        empty.textContent = '没有检测到图片';
+        dom.imageList.appendChild(empty);
+        return;
+      }
+
+      for (const img of images) {
+        const id = img.getAttribute(helperAttrImage);
+        const src = img.getAttribute('src') || '';
+        const item = document.createElement('article');
+        item.className = 'image-item';
+        item.dataset.imageId = id;
+        item.innerHTML = `
+          <div class="image-item-head">
+            <div class="image-index">
+              <i data-lucide="image"></i>
+              <span>图片 #${id}</span>
+              <span class="image-kind">${getImageKind(src)}</span>
+            </div>
+            <button class="icon" type="button" data-action="locate" title="定位"><i data-lucide="crosshair"></i></button>
+          </div>
+          <div class="image-body">
+            <div class="thumb-row">
+              <img class="thumb" src="${escapeAttr(src)}" alt="" referrerpolicy="no-referrer">
+              <div class="meta-grid">
+                <span>格式：<b data-role="format">${getFormat(src)}</b></span>
+                <span>尺寸：<b data-role="dimension">读取中</b></span>
+                <span>样式宽：<b>${escapeHtml(img.style.width || '继承')}</b></span>
+                <span>alt：<b data-role="altText">${escapeHtml(img.getAttribute('alt') || '空')}</b></span>
+              </div>
+            </div>
+            <div class="field">
+              <label>图片地址</label>
+              <textarea data-role="src" spellcheck="false">${escapeHtml(src)}</textarea>
+            </div>
+            <div class="field">
+              <label>alt 文字</label>
+              <input data-role="alt" value="${escapeAttr(img.getAttribute('alt') || '')}">
+            </div>
+            <div class="image-actions">
+              <button type="button" data-action="local"><i data-lucide="folder-open"></i>本地替换</button>
+              <button type="button" data-action="host-local"><i data-lucide="cloud-upload"></i>本地上传图床</button>
+              <button type="button" data-action="host-current"><i data-lucide="cloud-upload"></i>上传当前图片</button>
+              <button type="button" data-action="copy-url"><i data-lucide="copy"></i>复制地址</button>
+              <input class="file-input" data-role="file" type="file" accept="image/*">
+              <input class="file-input" data-role="host-file" type="file" accept="image/*">
+            </div>
+          </div>
+        `;
+        dom.imageList.appendChild(item);
+        wireImageItem(item, id);
+        loadImageDimension(src, item);
+      }
+      makeIcons();
+    }
+
+    function wireImageItem(item, id) {
+      const srcInput = item.querySelector('[data-role="src"]');
+      const altInput = item.querySelector('[data-role="alt"]');
+      const fileInput = item.querySelector('[data-role="file"]');
+      const hostFileInput = item.querySelector('[data-role="host-file"]');
+      const locateButton = item.querySelector('[data-action="locate"]');
+      const localButton = item.querySelector('[data-action="local"]');
+      const hostLocalButton = item.querySelector('[data-action="host-local"]');
+      const hostCurrentButton = item.querySelector('[data-action="host-current"]');
+      const copyUrlButton = item.querySelector('[data-action="copy-url"]');
+      const thumb = item.querySelector('.thumb');
+      const formatNode = item.querySelector('[data-role="format"]');
+      const altTextNode = item.querySelector('[data-role="altText"]');
+
+      srcInput.addEventListener('input', () => {
+        recordDebouncedHistory(`src-${id}`, state.imageInputTimers);
+        const value = srcInput.value.trim();
+        updateImageSource(id, value, item);
+        setStatus(`图片 #${id} 已更新`);
+      });
+
+      altInput.addEventListener('input', () => {
+        recordDebouncedHistory(`alt-${id}`, state.altInputTimers);
+        const value = altInput.value;
+        const img = getWorkingImageElement(id);
+        const previewImg = getPreviewImageElement(id);
+        if (img) img.setAttribute('alt', value);
+        if (previewImg) previewImg.setAttribute('alt', value);
+        altTextNode.textContent = value || '空';
+      });
+
+      locateButton.addEventListener('click', () => selectImage(id, true));
+      localButton.addEventListener('click', () => fileInput.click());
+      hostLocalButton.addEventListener('click', () => hostFileInput.click());
+      hostCurrentButton.addEventListener('click', () => uploadCurrentImageToHost(id, item, hostCurrentButton));
+      copyUrlButton.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(srcInput.value.trim());
+          setStatus(`图片 #${id} 地址已复制`);
+        } catch (error) {
+          srcInput.focus();
+          srcInput.select();
+          setStatus('浏览器未允许复制，请手动复制地址');
+        }
+      });
+      fileInput.addEventListener('change', () => replaceImageWithLocalFile(id, item));
+      hostFileInput.addEventListener('change', () => uploadLocalFileToHost(id, item, hostFileInput, hostLocalButton));
+    }
+
+    function updateImageSource(id, value, item) {
+      const img = getWorkingImageElement(id);
+      const previewImg = getPreviewImageElement(id);
+      const thumb = item.querySelector('.thumb');
+      const formatNode = item.querySelector('[data-role="format"]');
+      const kindNode = item.querySelector('.image-kind');
+      const srcInput = item.querySelector('[data-role="src"]');
+      if (img) img.setAttribute('src', value);
+      if (previewImg) previewImg.setAttribute('src', value);
+      if (thumb) thumb.src = value;
+      if (formatNode) formatNode.textContent = getFormat(value);
+      if (kindNode) kindNode.textContent = getImageKind(value);
+      if (srcInput && srcInput.value !== value) srcInput.value = value;
+      loadImageDimension(value, item);
+    }
+
+    function recordDebouncedHistory(key, timers) {
+      if (!timers.has(key)) {
+        recordHistory();
+      }
+      clearTimeout(timers.get(key));
+      timers.set(key, setTimeout(() => {
+        timers.delete(key);
+      }, 900));
+    }
+
+    function replaceImageWithLocalFile(id, item) {
+      const fileInput = item.querySelector('[data-role="file"]');
+      const file = fileInput.files && fileInput.files[0];
+      if (!file) return;
+      if (!file.type.startsWith('image/')) {
+        setStatus('请选择图片文件');
+        fileInput.value = '';
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        recordHistory();
+        const dataUrl = String(reader.result || '');
+        updateImageSource(id, dataUrl, item);
+        const altInput = item.querySelector('[data-role="alt"]');
+        if (altInput && !altInput.value.trim()) {
+          altInput.value = file.name;
+          altInput.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+        setStatus(`图片 #${id} 已替换为本地图片`);
+      };
+      reader.onerror = () => {
+        setStatus('本地图片读取失败');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function loadImageHostConfig() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(IMAGE_HOST_STORAGE_KEY) || '{}');
+        state.imageHostConfig = {
+          workerUrl: saved.workerUrl || '',
+          token: saved.token || '',
+          prefix: saved.prefix || 'xiumi'
+        };
+      } catch (error) {
+        localStorage.removeItem(IMAGE_HOST_STORAGE_KEY);
+      }
+    }
+
+    function saveImageHostConfig() {
+      state.imageHostConfig = {
+        workerUrl: document.getElementById('hostWorkerUrlInput').value.trim(),
+        token: document.getElementById('hostTokenInput').value.trim(),
+        prefix: document.getElementById('hostPrefixInput').value.trim() || 'xiumi'
+      };
+      localStorage.setItem(IMAGE_HOST_STORAGE_KEY, JSON.stringify(state.imageHostConfig));
+      setHostStatus('图床设置已保存');
+      setStatus('图床设置已保存');
+    }
+
+    function openImageHostModal() {
+      loadImageHostConfig();
+      document.getElementById('hostWorkerUrlInput').value = state.imageHostConfig.workerUrl || '';
+      document.getElementById('hostTokenInput').value = state.imageHostConfig.token || '';
+      document.getElementById('hostPrefixInput').value = state.imageHostConfig.prefix || 'xiumi';
+      setHostStatus(state.imageHostConfig.workerUrl ? '已读取本地设置' : '未配置 Worker 地址');
+      document.getElementById('imageHostBackdrop').classList.add('open');
+      makeIcons();
+    }
+
+    function closeImageHostModal() {
+      document.getElementById('imageHostBackdrop').classList.remove('open');
+    }
+
+    function setHostStatus(message) {
+      document.getElementById('hostStatus').textContent = message;
+    }
+
+    function getImageHostConfig() {
+      loadImageHostConfig();
+      return state.imageHostConfig;
+    }
+
+    function ensureImageHostConfigured() {
+      const config = getImageHostConfig();
+      if (!config.workerUrl) {
+        openImageHostModal();
+        setStatus('请先填写 Worker 地址');
+        return null;
+      }
+      return config;
+    }
+
+    function getWorkerBaseUrl(workerUrl) {
+      return workerUrl.trim().replace(/\/+$/, '').replace(/\/upload$/, '');
+    }
+
+    function getWorkerUploadUrl(workerUrl) {
+      const clean = workerUrl.trim().replace(/\/+$/, '');
+      return clean.endsWith('/upload') ? clean : `${clean}/upload`;
+    }
+
+    function makeImageHostHeaders(config, json = false) {
+      const headers = {};
+      if (json) headers['Content-Type'] = 'application/json';
+      if (config.token) headers.Authorization = `Bearer ${config.token}`;
+      return headers;
+    }
+
+    async function testImageHostConnection() {
+      saveImageHostConfig();
+      const config = ensureImageHostConfigured();
+      if (!config) return;
+      setHostStatus('正在测试连接...');
+      try {
+        const response = await fetch(getWorkerBaseUrl(config.workerUrl), {
+          method: 'GET',
+          headers: makeImageHostHeaders(config)
+        });
+        const text = await response.text();
+        if (!response.ok) throw new Error(text || `HTTP ${response.status}`);
+        setHostStatus('连接正常');
+        setStatus('R2 图床连接正常');
+      } catch (error) {
+        setHostStatus(`连接失败：${error.message}`);
+        setStatus('R2 图床连接失败');
+      }
+    }
+
+    function setUploadButtonState(button, uploading) {
+      if (!button) return;
+      button.disabled = uploading;
+      button.classList.toggle('uploading', uploading);
+    }
+
+    async function uploadLocalFileToHost(id, item, fileInput, button) {
+      const file = fileInput.files && fileInput.files[0];
+      if (!file) return;
+      if (!file.type.startsWith('image/')) {
+        setStatus('请选择图片文件');
+        fileInput.value = '';
+        return;
+      }
+      await uploadBlobToHostAndReplace(id, item, file, file.name, button);
+      fileInput.value = '';
+    }
+
+    async function uploadCurrentImageToHost(id, item, button) {
+      const src = item.querySelector('[data-role="src"]')?.value.trim() || '';
+      if (!src) {
+        setStatus('当前图片地址为空');
+        return;
+      }
+      try {
+        if (src.startsWith('data:image/')) {
+          const blob = dataUrlToBlob(src);
+          await uploadBlobToHostAndReplace(id, item, blob, inferFileName(src, `image-${id}`), button);
+          return;
+        }
+        if (/^https?:\/\//i.test(src)) {
+          await uploadRemoteImageToHostAndReplace(id, item, src, button);
+          return;
+        }
+        setStatus('当前图片不是可上传的本地或网络图片');
+      } catch (error) {
+        setStatus(`图片 #${id} 上传失败：${error.message}`);
+      }
+    }
+
+    async function uploadBlobToHostAndReplace(id, item, blob, filename, button) {
+      const config = ensureImageHostConfigured();
+      if (!config) return;
+      setUploadButtonState(button, true);
+      setStatus(`图片 #${id} 正在上传图床...`);
+      try {
+        const url = await uploadBlobToImageHost(blob, filename, config);
+        recordHistory();
+        updateImageSource(id, url, item);
+        const altInput = item.querySelector('[data-role="alt"]');
+        if (altInput && !altInput.value.trim() && filename) {
+          altInput.value = filename;
+          altInput.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+        setStatus(`图片 #${id} 已上传图床`);
+      } catch (error) {
+        setStatus(`图片 #${id} 上传失败：${error.message}`);
+        throw error;
+      } finally {
+        setUploadButtonState(button, false);
+      }
+    }
+
+    async function uploadRemoteImageToHostAndReplace(id, item, sourceUrl, button) {
+      const config = ensureImageHostConfigured();
+      if (!config) return;
+      setUploadButtonState(button, true);
+      setStatus(`图片 #${id} 正在转存到图床...`);
+      try {
+        const url = await uploadRemoteImageToHost(sourceUrl, inferFileName(sourceUrl, `image-${id}`), config);
+        recordHistory();
+        updateImageSource(id, url, item);
+        setStatus(`图片 #${id} 已转存到图床`);
+      } catch (error) {
+        setStatus(`图片 #${id} 转存失败：${error.message}`);
+        throw error;
+      } finally {
+        setUploadButtonState(button, false);
+      }
+    }
+
+    async function uploadBlobToImageHost(blob, filename, config) {
+      const form = new FormData();
+      form.append('file', blob, filename || 'image.png');
+      form.append('prefix', config.prefix || 'xiumi');
+      const response = await fetch(getWorkerUploadUrl(config.workerUrl), {
+        method: 'POST',
+        headers: makeImageHostHeaders(config),
+        body: form
+      });
+      return readImageHostUrl(response);
+    }
+
+    async function uploadRemoteImageToHost(sourceUrl, filename, config) {
+      const response = await fetch(getWorkerUploadUrl(config.workerUrl), {
+        method: 'POST',
+        headers: makeImageHostHeaders(config, true),
+        body: JSON.stringify({
+          sourceUrl,
+          name: filename || 'image',
+          prefix: config.prefix || 'xiumi'
+        })
+      });
+      return readImageHostUrl(response);
+    }
+
+    async function readImageHostUrl(response) {
+      const text = await response.text();
+      let data = {};
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch (error) {
+        data = { error: text };
+      }
+      if (!response.ok) {
+        throw new Error(data.error || data.message || `HTTP ${response.status}`);
+      }
+      const url = data.url || data.location || data.src;
+      if (!url) throw new Error('上传接口没有返回图片 URL');
+      return url;
+    }
+
+    function dataUrlToBlob(dataUrl) {
+      const [head, body = ''] = dataUrl.split(',');
+      const mime = (head.match(/data:([^;]+)/) || [])[1] || 'image/png';
+      const binary = atob(body);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i += 1) {
+        bytes[i] = binary.charCodeAt(i);
+      }
+      return new Blob([bytes], { type: mime });
+    }
+
+    function inferFileName(src, fallback) {
+      if (src.startsWith('data:image/')) {
+        const format = getFormat(src);
+        return `${fallback}.${format === 'jpeg' ? 'jpg' : format || 'png'}`;
+      }
+      try {
+        const path = new URL(src).pathname;
+        const raw = decodeURIComponent(path.split('/').filter(Boolean).pop() || '');
+        if (raw && /\.[a-z0-9]{2,5}$/i.test(raw)) return raw;
+      } catch (error) {
+        return `${fallback}.png`;
+      }
+      return `${fallback}.png`;
+    }
+
+    async function batchUploadImagesToHost() {
+      if (!state.doc) {
+        setStatus('没有可上传图片');
+        return;
+      }
+      const config = ensureImageHostConfigured();
+      if (!config) return;
+      const images = Array.from(state.doc.querySelectorAll(`img[${helperAttrImage}]`));
+      if (!images.length) {
+        setStatus('没有检测到图片');
+        return;
+      }
+      let success = 0;
+      let failed = 0;
+      for (const img of images) {
+        const id = img.getAttribute(helperAttrImage);
+        const item = dom.imageList.querySelector(`[data-image-id="${CSS.escape(String(id))}"]`);
+        const src = img.getAttribute('src') || '';
+        if (!item || !src) continue;
+        const button = item.querySelector('[data-action="host-current"]');
+        setStatus(`批量上传中：${success + failed + 1}/${images.length}`);
+        try {
+          if (src.startsWith('data:image/')) {
+            const blob = dataUrlToBlob(src);
+            await uploadBlobToHostAndReplace(id, item, blob, inferFileName(src, `image-${id}`), button);
+            success += 1;
+          } else if (/^https?:\/\//i.test(src)) {
+            await uploadRemoteImageToHostAndReplace(id, item, src, button);
+            success += 1;
+          }
+        } catch (error) {
+          failed += 1;
+        }
+      }
+      setStatus(`批量上传完成：成功 ${success} 张，失败 ${failed} 张`);
+    }
+
+    function selectImage(id, scroll = false) {
+      state.activeImageId = String(id);
+      document.querySelectorAll('.image-item.active').forEach((node) => node.classList.remove('active'));
+      const item = dom.imageList.querySelector(`[data-image-id="${CSS.escape(String(id))}"]`);
+      item?.classList.add('active');
+      if (scroll) item?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+
+      const pdoc = dom.previewFrame.contentDocument;
+      pdoc?.querySelectorAll('.xe-active-image').forEach((node) => node.classList.remove('xe-active-image'));
+      const previewImg = getPreviewImageElement(id);
+      if (previewImg) {
+        previewImg.classList.add('xe-active-image');
+        previewImg.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'smooth' });
+      }
+    }
+
+    function getImageKind(src) {
+      if (src.includes('templates-assets')) return '模板装饰';
+      if (src.includes('/mat/i/')) return '正文素材';
+      return '图片';
+    }
+
+    function getFormat(src) {
+      if (src.startsWith('data:image/')) {
+        const mime = src.slice('data:image/'.length).split(';')[0];
+        return mime || 'base64';
+      }
+      const clean = src.split('?')[0].split('#')[0];
+      const match = clean.match(/\.([a-zA-Z0-9]+)$/);
+      return match ? match[1].toLowerCase() : '未知';
+    }
+
+    function loadImageDimension(src, item) {
+      const dimensionNode = item.querySelector('[data-role="dimension"]');
+      if (!src) {
+        dimensionNode.textContent = '空';
+        return;
+      }
+      const image = new Image();
+      image.referrerPolicy = 'no-referrer';
+      image.onload = () => {
+        dimensionNode.textContent = `${image.naturalWidth} x ${image.naturalHeight}`;
+      };
+      image.onerror = () => {
+        dimensionNode.textContent = parseCropDimension(src) || '读取失败';
+      };
+      image.src = src;
+    }
+
+    function parseCropDimension(src) {
+      const cropMatch = src.match(/crop,h_(\d+),w_(\d+)/);
+      if (cropMatch) return `${cropMatch[2]} x ${cropMatch[1]}`;
+      const sizeMatch = src.match(/data-s="([^"]+)"/);
+      return sizeMatch ? sizeMatch[1] : '';
+    }
+
+    async function loadSampleSource() {
+      try {
+        const response = await fetch(SOURCE_SAMPLE_PATH, { cache: 'no-store' });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const html = await response.text();
+        parseAndLock(html);
+        setStatus('示例已载入');
+      } catch (error) {
+        setStatus('示例读取失败');
+      }
+    }
+
+    async function copySampleSource() {
+      try {
+        const response = await fetch(SOURCE_SAMPLE_PATH, { cache: 'no-store' });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const html = await response.text();
+        await writeClipboardSource(html);
+        setStatus('示例源码已复制');
+      } catch (error) {
+        setStatus('示例复制失败');
+      }
+    }
+
+    function ensureTemplates() {
+      const saved = localStorage.getItem(TEMPLATE_STORAGE_KEY);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length) {
+            state.templates = parsed;
+            state.activeTemplateId = state.templates[0].id;
+            return;
+          }
+        } catch (error) {
+          localStorage.removeItem(TEMPLATE_STORAGE_KEY);
+        }
+      }
+      state.templates = [
+        { id: makeTemplateId(), name: '01模板', source: '' },
+        { id: makeTemplateId(), name: '02模板', source: '' },
+        { id: makeTemplateId(), name: '03模板', source: '' }
+      ];
+      state.activeTemplateId = state.templates[0].id;
+      saveTemplatesToStorage();
+    }
+
+    function makeTemplateId() {
+      return `tpl-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    }
+
+    function saveTemplatesToStorage() {
+      localStorage.setItem(TEMPLATE_STORAGE_KEY, JSON.stringify(state.templates));
+    }
+
+    function getActiveTemplate() {
+      return state.templates.find((tpl) => tpl.id === state.activeTemplateId) || state.templates[0] || null;
+    }
+
+    function openTemplateModal() {
+      ensureTemplates();
+      renderTemplateList();
+      renderTemplateEditor();
+      document.getElementById('templateBackdrop').classList.add('open');
+      makeIcons();
+    }
+
+    function closeTemplateModal() {
+      document.getElementById('templateBackdrop').classList.remove('open');
+    }
+
+    function renderTemplateList() {
+      const list = document.getElementById('templateList');
+      list.innerHTML = '';
+      state.templates.forEach((tpl, index) => {
+        const item = document.createElement('button');
+        item.type = 'button';
+        item.className = 'template-item';
+        item.classList.toggle('active', tpl.id === state.activeTemplateId);
+        item.innerHTML = `
+          <span class="template-item-title">${escapeHtml(tpl.name || `模板 ${index + 1}`)}</span>
+          <span class="template-item-meta">${tpl.source ? `${tpl.source.length} 字符` : '未填写源码'}</span>
+        `;
+        item.addEventListener('click', () => {
+          state.activeTemplateId = tpl.id;
+          renderTemplateList();
+          renderTemplateEditor();
+        });
+        list.appendChild(item);
+      });
+    }
+
+    function renderTemplateEditor() {
+      const tpl = getActiveTemplate();
+      document.getElementById('templateNameInput').value = tpl ? tpl.name : '';
+      document.getElementById('templateSourceInput').value = tpl ? tpl.source : '';
+      document.getElementById('deleteTemplateBtn').disabled = state.templates.length <= 1;
+      document.getElementById('loadTemplateBtn').disabled = !tpl || !tpl.source.trim();
+    }
+
+    function saveActiveTemplate() {
+      const tpl = getActiveTemplate();
+      if (!tpl) return;
+      recordHistory();
+      tpl.name = document.getElementById('templateNameInput').value.trim() || '未命名模板';
+      tpl.source = document.getElementById('templateSourceInput').value;
+      saveTemplatesToStorage();
+      renderTemplateList();
+      renderTemplateEditor();
+      setStatus('模板已保存');
+    }
+
+    function newTemplate() {
+      recordHistory();
+      const next = state.templates.length + 1;
+      const tpl = {
+        id: makeTemplateId(),
+        name: `${String(next).padStart(2, '0')}模板`,
+        source: ''
+      };
+      state.templates.push(tpl);
+      state.activeTemplateId = tpl.id;
+      saveTemplatesToStorage();
+      renderTemplateList();
+      renderTemplateEditor();
+      setStatus('已新建模板');
+    }
+
+    function deleteActiveTemplate() {
+      if (state.templates.length <= 1) return;
+      const index = state.templates.findIndex((tpl) => tpl.id === state.activeTemplateId);
+      if (index < 0) return;
+      recordHistory();
+      state.templates.splice(index, 1);
+      state.activeTemplateId = state.templates[Math.max(0, index - 1)].id;
+      saveTemplatesToStorage();
+      renderTemplateList();
+      renderTemplateEditor();
+      setStatus('模板已删除');
+    }
+
+    function loadActiveTemplate() {
+      saveActiveTemplate();
+      const tpl = getActiveTemplate();
+      if (!tpl || !tpl.source.trim()) {
+        setStatus('当前模板没有源码');
+        return;
+      }
+      parseAndLock(tpl.source);
+      closeTemplateModal();
+      setStatus(`已载入：${tpl.name}`);
+    }
+
+    async function copyFinalSource() {
+      if (!state.doc) {
+        setStatus('没有可复制源码');
+        return;
+      }
+      const html = getCleanHtml();
+      try {
+        await writeClipboardHtml(html);
+        setStatus('完整源码已复制');
+      } catch (error) {
+        setStatus('复制失败，浏览器不允许写入剪贴板');
+      }
+    }
+
+    async function writeClipboardHtml(html) {
+      const plain = getBodyText(html);
+      if (navigator.clipboard && window.ClipboardItem) {
+        const item = new ClipboardItem({
+          'text/html': new Blob([html], { type: 'text/html' }),
+          'text/plain': new Blob([plain || html], { type: 'text/plain' })
+        });
+        await navigator.clipboard.write([item]);
+        return;
+      }
+      await navigator.clipboard.writeText(html);
+    }
+
+    async function writeClipboardSource(html) {
+      if (navigator.clipboard && window.ClipboardItem) {
+        const item = new ClipboardItem({
+          'text/html': new Blob([html], { type: 'text/html' }),
+          'text/plain': new Blob([html], { type: 'text/plain' })
+        });
+        await navigator.clipboard.write([item]);
+        return;
+      }
+      await navigator.clipboard.writeText(html);
+    }
+
+    async function saveSourceFile() {
+      if (!state.doc) {
+        setStatus('没有可保存源码');
+        return;
+      }
+      const html = getCleanHtml();
+      const filename = makeSourceFilename();
+      const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+
+      if (state.projectDirHandle) {
+        const saved = await saveBlobToProjectFolder(blob, filename);
+        if (saved) return;
+      }
+
+      if (window.showSaveFilePicker) {
+        try {
+          const handle = await window.showSaveFilePicker({
+            suggestedName: filename,
+            types: [{ description: 'HTML', accept: { 'text/html': ['.html'] } }]
+          });
+          const writable = await handle.createWritable();
+          await writable.write(blob);
+          await writable.close();
+          setStatus('源码文件已保存');
+          return;
+        } catch (error) {
+          if (error.name === 'AbortError') {
+            setStatus('已取消保存');
+            return;
+          }
+        }
+      }
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      setStatus('源码文件已下载');
+    }
+
+    function makeSourceFilename() {
+      loadProjectFolderConfig();
+      const prefix = (state.projectFolderConfig.filePrefix || 'xiumi-edited')
+        .trim()
+        .replace(/[\\/:*?"<>|]+/g, '-')
+        .replace(/\s+/g, '-')
+        .replace(/^-+|-+$/g, '') || 'xiumi-edited';
+      return `${prefix}-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.html`;
+    }
+
+    async function saveBlobToProjectFolder(blob, filename) {
+      try {
+        const permitted = await verifyProjectFolderPermission(state.projectDirHandle, true);
+        if (!permitted) {
+          setStatus('项目文件夹没有写入权限，请重新选择');
+          return false;
+        }
+        const fileHandle = await state.projectDirHandle.getFileHandle(filename, { create: true });
+        const writable = await fileHandle.createWritable();
+        await writable.write(blob);
+        await writable.close();
+        setStatus(`源码已保存到项目文件夹：${filename}`);
+        return true;
+      } catch (error) {
+        setStatus(`项目文件夹保存失败：${error.message}`);
+        return false;
+      }
+    }
+
+    function loadProjectFolderConfig() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(PROJECT_FOLDER_STORAGE_KEY) || '{}');
+        state.projectFolderConfig = {
+          pathLabel: saved.pathLabel || '',
+          filePrefix: saved.filePrefix || 'xiumi-edited'
+        };
+      } catch (error) {
+        localStorage.removeItem(PROJECT_FOLDER_STORAGE_KEY);
+      }
+    }
+
+    function saveProjectFolderConfig() {
+      state.projectFolderConfig = {
+        pathLabel: document.getElementById('projectFolderPathInput').value.trim(),
+        filePrefix: document.getElementById('projectFilePrefixInput').value.trim() || 'xiumi-edited'
+      };
+      localStorage.setItem(PROJECT_FOLDER_STORAGE_KEY, JSON.stringify(state.projectFolderConfig));
+      updateProjectPathChip();
+      setProjectFolderStatus('项目路径已确认');
+      setStatus('项目文件夹路径已确认');
+      closeProjectFolderModal();
+    }
+
+    function updateProjectPathChip() {
+      loadProjectFolderConfig();
+      const label = state.projectFolderConfig.pathLabel || (state.projectDirHandle ? state.projectDirHandle.name : '');
+      dom.projectPathText.textContent = label || '未选择项目文件夹';
+      dom.projectPathChip.classList.toggle('empty', !label);
+      dom.projectPathChip.title = label ? `点击复制：${label}` : '点击打开项目文件夹设置';
+    }
+
+    function openProjectFolderModal() {
+      loadProjectFolderConfig();
+      document.getElementById('projectFolderPathInput').value = state.projectFolderConfig.pathLabel || '';
+      document.getElementById('projectFilePrefixInput').value = state.projectFolderConfig.filePrefix || 'xiumi-edited';
+      document.getElementById('projectHandleStateInput').value = state.projectDirHandle ? `已授权：${state.projectDirHandle.name}` : '未选择';
+      setProjectFolderStatus(state.projectDirHandle ? '已选择文件夹，可保存源码' : '请先选择文件夹');
+      document.getElementById('projectFolderBackdrop').classList.add('open');
+      makeIcons();
+    }
+
+    function closeProjectFolderModal() {
+      document.getElementById('projectFolderBackdrop').classList.remove('open');
+    }
+
+    function setProjectFolderStatus(message) {
+      document.getElementById('projectFolderStatus').textContent = message;
+    }
+
+    async function chooseProjectFolder() {
+      if (!window.showDirectoryPicker) {
+        setProjectFolderStatus('当前浏览器不支持选择文件夹，请使用 Chrome 或 Edge');
+        return;
+      }
+      try {
+        const handle = await window.showDirectoryPicker({ mode: 'readwrite' });
+        const permitted = await verifyProjectFolderPermission(handle, true);
+        if (!permitted) {
+          setProjectFolderStatus('未获得文件夹写入权限');
+          return;
+        }
+        state.projectDirHandle = handle;
+        await persistProjectDirectoryHandle(handle);
+        document.getElementById('projectHandleStateInput').value = `已授权：${handle.name}`;
+        const pathInput = document.getElementById('projectFolderPathInput');
+        if (!pathInput.value.trim()) pathInput.value = handle.name;
+        setProjectFolderStatus('文件夹已选择，请确认路径');
+      } catch (error) {
+        if (error.name === 'AbortError') {
+          setProjectFolderStatus('已取消选择');
+          return;
+        }
+        setProjectFolderStatus(`选择失败：${error.message}`);
+      }
+    }
+
+    async function verifyProjectFolderPermission(handle, write = false) {
+      if (!handle) return false;
+      const options = write ? { mode: 'readwrite' } : {};
+      if (typeof handle.queryPermission === 'function') {
+        const current = await handle.queryPermission(options);
+        if (current === 'granted') return true;
+      }
+      if (typeof handle.requestPermission === 'function') {
+        const next = await handle.requestPermission(options);
+        return next === 'granted';
+      }
+      return true;
+    }
+
+    async function copyProjectPath() {
+      loadProjectFolderConfig();
+      const label = state.projectFolderConfig.pathLabel || (state.projectDirHandle ? state.projectDirHandle.name : '');
+      if (!label) {
+        openProjectFolderModal();
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(label);
+        setStatus('项目路径已复制');
+      } catch (error) {
+        setStatus('浏览器未允许复制项目路径');
+      }
+    }
+
+    async function openProjectDb() {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open(PROJECT_HANDLE_DB, 1);
+        request.onupgradeneeded = () => {
+          request.result.createObjectStore(PROJECT_HANDLE_STORE);
+        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+    }
+
+    async function persistProjectDirectoryHandle(handle) {
+      if (!window.indexedDB || !handle) return;
+      const db = await openProjectDb();
+      await new Promise((resolve, reject) => {
+        const tx = db.transaction(PROJECT_HANDLE_STORE, 'readwrite');
+        tx.objectStore(PROJECT_HANDLE_STORE).put(handle, 'projectDir');
+        tx.oncomplete = resolve;
+        tx.onerror = () => reject(tx.error);
+      });
+      db.close();
+    }
+
+    async function restoreProjectDirectoryHandle() {
+      loadProjectFolderConfig();
+      updateProjectPathChip();
+      if (!window.indexedDB) return;
+      try {
+        const db = await openProjectDb();
+        const handle = await new Promise((resolve, reject) => {
+          const tx = db.transaction(PROJECT_HANDLE_STORE, 'readonly');
+          const request = tx.objectStore(PROJECT_HANDLE_STORE).get('projectDir');
+          request.onsuccess = () => resolve(request.result || null);
+          request.onerror = () => reject(request.error);
+        });
+        db.close();
+        if (handle) {
+          state.projectDirHandle = handle;
+          updateProjectPathChip();
+        }
+      } catch (error) {
+        setStatus('项目文件夹授权恢复失败，可重新选择');
+      }
+    }
+
+    function unlockSource() {
+      state.sourceLocked = false;
+      dom.sourceBox.readOnly = false;
+      dom.sourceBox.focus();
+      updateSourceState();
+      setStatus('可以重新粘贴');
+    }
+
+    function clearWorkspace(options = {}) {
+      if (options.recordHistory !== false) {
+        recordHistory();
+      }
+      state.doc = null;
+      state.sourceLocked = false;
+      dom.sourceBox.readOnly = false;
+      dom.sourceBox.value = '';
+      dom.imageList.innerHTML = '';
+      dom.imageState.textContent = '0 张图片';
+      updateSourceState();
+      renderPreview();
+      setStatus('已清空');
+      updateHistoryButtons();
+    }
+
+    function refreshFromSource() {
+      if (!dom.sourceBox.value.trim()) return;
+      parseAndLock(dom.sourceBox.value);
+    }
+
+    function setPanelCollapsed(panel, collapsed) {
+      const className = panel === 'source' ? 'source-collapsed' : 'image-collapsed';
+      dom.appRoot.classList.toggle(className, collapsed);
+      requestAnimationFrame(() => {
+        syncFrameHeight();
+      });
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+    }
+
+    function escapeAttr(value) {
+      return escapeHtml(value).replaceAll('\n', '&#10;');
+    }
+
+    function scheduleParse() {
+      clearTimeout(state.debounceTimer);
+      state.debounceTimer = setTimeout(() => {
+        if (!state.sourceLocked && dom.sourceBox.value.trim()) {
+          parseAndLock(dom.sourceBox.value);
+        }
+      }, 450);
+    }
+
+    dom.sourceBox.addEventListener('paste', (event) => {
+      const html = event.clipboardData?.getData('text/html') || '';
+      const text = event.clipboardData?.getData('text/plain') || '';
+      const source = html && /<[^>]+>/.test(html) ? html : text;
+      if (!source) return;
+      event.preventDefault();
+      dom.sourceBox.value = normalizeInputHtml(source);
+      parseAndLock(dom.sourceBox.value);
+    });
+
+    dom.sourceBox.addEventListener('input', scheduleParse);
+    dom.previewFrame.addEventListener('load', attachPreviewHandlers);
+
+    document.getElementById('sampleLoadBtn').addEventListener('click', loadSampleSource);
+    document.getElementById('templateBtn').addEventListener('click', openTemplateModal);
+    document.getElementById('imageHostBtn').addEventListener('click', openImageHostModal);
+    document.getElementById('sampleCopyBtn').addEventListener('click', copySampleSource);
+    document.getElementById('undoBtn').addEventListener('click', undo);
+    document.getElementById('redoBtn').addEventListener('click', redo);
+    document.getElementById('copyBtn').addEventListener('click', copyFinalSource);
+    document.getElementById('saveBtn').addEventListener('click', saveSourceFile);
+    document.getElementById('projectFolderBtn').addEventListener('click', openProjectFolderModal);
+    document.getElementById('projectPathChip').addEventListener('click', copyProjectPath);
+    document.getElementById('unlockBtn').addEventListener('click', unlockSource);
+    document.getElementById('clearBtn').addEventListener('click', clearWorkspace);
+    document.getElementById('refreshBtn').addEventListener('click', refreshFromSource);
+    document.getElementById('locateFirstImageBtn').addEventListener('click', () => selectImage('1', true));
+    document.getElementById('collapseSourceBtn').addEventListener('click', () => setPanelCollapsed('source', true));
+    document.getElementById('expandSourceBtn').addEventListener('click', () => setPanelCollapsed('source', false));
+    document.getElementById('collapseImageBtn').addEventListener('click', () => setPanelCollapsed('image', true));
+    document.getElementById('expandImageBtn').addEventListener('click', () => setPanelCollapsed('image', false));
+    document.getElementById('batchUploadBtn').addEventListener('click', batchUploadImagesToHost);
+    document.getElementById('imageHostFooterBtn').addEventListener('click', openImageHostModal);
+    document.getElementById('closeEditorBtn').addEventListener('click', () => closeTextEditor(true));
+    document.getElementById('cancelEditBtn').addEventListener('click', () => closeTextEditor(true));
+    document.getElementById('saveEditBtn').addEventListener('click', saveTextEdit);
+    document.getElementById('closeTemplateBtn').addEventListener('click', closeTemplateModal);
+    document.getElementById('newTemplateBtn').addEventListener('click', newTemplate);
+    document.getElementById('deleteTemplateBtn').addEventListener('click', deleteActiveTemplate);
+    document.getElementById('saveTemplateBtn').addEventListener('click', saveActiveTemplate);
+    document.getElementById('loadTemplateBtn').addEventListener('click', loadActiveTemplate);
+    document.getElementById('closeImageHostBtn').addEventListener('click', closeImageHostModal);
+    document.getElementById('saveImageHostBtn').addEventListener('click', saveImageHostConfig);
+    document.getElementById('testImageHostBtn').addEventListener('click', testImageHostConnection);
+    document.getElementById('closeProjectFolderBtn').addEventListener('click', closeProjectFolderModal);
+    document.getElementById('chooseProjectFolderBtn').addEventListener('click', chooseProjectFolder);
+    document.getElementById('saveProjectFolderBtn').addEventListener('click', saveProjectFolderConfig);
+
+    dom.editorSurface.addEventListener('input', updateLivePreview);
+    dom.editorBackdrop.addEventListener('mousedown', (event) => {
+      if (event.target === dom.editorBackdrop) closeTextEditor(true);
+    });
+    document.getElementById('templateBackdrop').addEventListener('mousedown', (event) => {
+      if (event.target === document.getElementById('templateBackdrop')) closeTemplateModal();
+    });
+    document.getElementById('imageHostBackdrop').addEventListener('mousedown', (event) => {
+      if (event.target === document.getElementById('imageHostBackdrop')) closeImageHostModal();
+    });
+    document.getElementById('projectFolderBackdrop').addEventListener('mousedown', (event) => {
+      if (event.target === document.getElementById('projectFolderBackdrop')) closeProjectFolderModal();
+    });
+
+    document.getElementById('toolbar').addEventListener('mousedown', (event) => {
+      const button = event.target.closest('button');
+      if (button) event.preventDefault();
+    });
+
+    document.getElementById('toolbar').addEventListener('click', (event) => {
+      const commandButton = event.target.closest('[data-cmd]');
+      const alignButton = event.target.closest('[data-align]');
+      if (commandButton) {
+        execInlineCommand(commandButton.dataset.cmd);
+      }
+      if (alignButton) {
+        applyAlignment(alignButton.dataset.align);
+      }
+    });
+
+    dom.colorInput.addEventListener('input', () => {
+      wrapSelectionWithStyle(`color: ${dom.colorInput.value};`);
+    });
+
+    dom.fontSizeSelect.addEventListener('change', () => {
+      wrapSelectionWithStyle(`font-size: ${dom.fontSizeSelect.value}px;`);
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && dom.editorBackdrop.classList.contains('open')) {
+        closeTextEditor(true);
+      }
+      if (event.key === 'Escape' && document.getElementById('templateBackdrop').classList.contains('open')) {
+        closeTemplateModal();
+      }
+      if (event.key === 'Escape' && document.getElementById('imageHostBackdrop').classList.contains('open')) {
+        closeImageHostModal();
+      }
+      if (event.key === 'Escape' && document.getElementById('projectFolderBackdrop').classList.contains('open')) {
+        closeProjectFolderModal();
+      }
+      if ((event.ctrlKey || event.metaKey) && !event.shiftKey && event.key.toLowerCase() === 'z' && !dom.editorBackdrop.classList.contains('open')) {
+        event.preventDefault();
+        undo();
+      }
+      if (((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'y') || ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === 'z')) {
+        event.preventDefault();
+        redo();
+      }
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
+        event.preventDefault();
+        if (dom.editorBackdrop.classList.contains('open')) {
+          saveTextEdit();
+        } else if (document.getElementById('templateBackdrop').classList.contains('open')) {
+          saveActiveTemplate();
+        } else {
+          saveSourceFile();
+        }
+      }
+    });
+
+    window.__xiumiTool = {
+      loadSampleSource,
+      openTemplateModal,
+      openTextEditor,
+      saveTextEdit,
+      undo,
+      redo,
+      openImageHostModal,
+      batchUploadImagesToHost,
+      openProjectFolderModal,
+      copyFinalSource,
+      getCleanHtml: () => getCleanHtml(),
+      stats: () => ({
+        text: state.doc?.querySelectorAll(`[${helperAttrText}]`).length || 0,
+        image: state.doc?.querySelectorAll(`img[${helperAttrImage}]`).length || 0,
+        section: state.doc?.querySelectorAll('section').length || 0,
+        style: state.doc?.querySelectorAll('[style]').length || 0
+      })
+    };
+
+    loadImageHostConfig();
+    restoreProjectDirectoryHandle();
+    ensureTemplates();
+    updateHistoryButtons();
+    makeIcons();
+  </script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+{
+  "name": "xiumi-locked-editor",
+  "version": "1.0.0",
+  "private": false,
+  "description": "A locked-layout Xiumi/WeChat article HTML editor with text, image, template, R2 image hosting, and copy/export workflows.",
+  "scripts": {
+    "serve": "python -m http.server 8765",
+    "check": "node scripts/check-html-scripts.cjs && node --check cloudflare-r2-worker.js",
+    "deploy:worker": "wrangler deploy",
+    "secret:worker": "wrangler secret put UPLOAD_TOKEN"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}
