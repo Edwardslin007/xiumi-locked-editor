@@ -832,7 +832,8 @@
         <button id="sampleCopyBtn" type="button"><i data-lucide="copy"></i>复制示例源码</button>
         <button id="undoBtn" class="icon" type="button" title="撤销"><i data-lucide="undo-2"></i></button>
         <button id="redoBtn" class="icon" type="button" title="重做"><i data-lucide="redo-2"></i></button>
-        <button id="copyBtn" class="primary" type="button"><i data-lucide="clipboard-copy"></i>一键复制源码</button>
+        <button id="copyBtn" class="primary" type="button"><i data-lucide="clipboard-copy"></i>复制源码</button>
+        <button id="copyRichBtn" type="button"><i data-lucide="copy-check"></i>复制排版</button>
         <button id="saveBtn" type="button"><i data-lucide="download"></i>保存源码文件</button>
         <button id="projectFolderBtn" type="button"><i data-lucide="folder-check"></i>项目文件夹</button>
         <button id="projectPathChip" class="project-path-chip empty" type="button" title="点击复制项目路径">
@@ -2380,8 +2381,22 @@
       }
       const html = getCleanHtml();
       try {
+        await writeClipboardSource(html);
+        setStatus('HTML 源码已复制');
+      } catch (error) {
+        setStatus('复制失败，浏览器不允许写入剪贴板');
+      }
+    }
+
+    async function copyFinalRich() {
+      if (!state.doc) {
+        setStatus('没有可复制排版');
+        return;
+      }
+      const html = getCleanHtml();
+      try {
         const mode = await writeClipboardHtml(html);
-        setStatus(mode === 'rich' ? '完整源码已复制' : '完整源码已复制（纯文本模式）');
+        setStatus(mode === 'rich' ? '排版样式已复制' : '排版复制已降级为源码文本');
       } catch (error) {
         setStatus('复制失败，浏览器不允许写入剪贴板');
       }
@@ -2389,9 +2404,12 @@
 
     async function writeClipboardHtml(html) {
       if (navigator.clipboard && window.ClipboardItem) {
+        const fragment = getBodyFragment(html);
+        const clipboardHtml = makeClipboardFragmentHtml(fragment);
+        const plain = getBodyText(fragment);
         const item = new ClipboardItem({
-          'text/html': new Blob([html], { type: 'text/html' }),
-          'text/plain': new Blob([html], { type: 'text/plain' })
+          'text/html': new Blob([clipboardHtml], { type: 'text/html' }),
+          'text/plain': new Blob([plain || fragment], { type: 'text/plain' })
         });
         try {
           await navigator.clipboard.write([item]);
@@ -2404,25 +2422,27 @@
     }
 
     async function writeClipboardSource(html) {
-      if (navigator.clipboard && window.ClipboardItem) {
-        const item = new ClipboardItem({
-          'text/html': new Blob([html], { type: 'text/html' }),
-          'text/plain': new Blob([html], { type: 'text/plain' })
-        });
-        try {
-          await navigator.clipboard.write([item]);
-          return 'rich';
-        } catch (error) {
-          return writeClipboardPlainText(html);
-        }
-      }
       return writeClipboardPlainText(html);
+    }
+
+    function getBodyFragment(html) {
+      const parsed = new DOMParser().parseFromString(html, 'text/html');
+      return parsed.body?.innerHTML || html;
+    }
+
+    function makeClipboardFragmentHtml(fragment) {
+      return `<!doctype html><html><body><!--StartFragment-->${fragment}<!--EndFragment--></body></html>`;
     }
 
     async function writeClipboardPlainText(text) {
       if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(text);
-        return 'text';
+        try {
+          await navigator.clipboard.writeText(text);
+          return 'text';
+        } catch (error) {
+          // Fall through to the textarea copy path for browsers that expose
+          // clipboard.writeText but reject it in the current permission state.
+        }
       }
       const textarea = document.createElement('textarea');
       textarea.value = text;
@@ -2740,6 +2760,7 @@
     document.getElementById('undoBtn').addEventListener('click', undo);
     document.getElementById('redoBtn').addEventListener('click', redo);
     document.getElementById('copyBtn').addEventListener('click', copyFinalSource);
+    document.getElementById('copyRichBtn').addEventListener('click', copyFinalRich);
     document.getElementById('saveBtn').addEventListener('click', saveSourceFile);
     document.getElementById('projectFolderBtn').addEventListener('click', openProjectFolderModal);
     document.getElementById('projectPathChip').addEventListener('click', copyProjectPath);
@@ -2850,6 +2871,7 @@
       batchUploadImagesToHost,
       openProjectFolderModal,
       copyFinalSource,
+      copyFinalRich,
       getCleanHtml: () => getCleanHtml(),
       stats: () => ({
         text: state.doc?.querySelectorAll(`[${helperAttrText}]`).length || 0,
