@@ -969,18 +969,18 @@
   <div id="imageHostBackdrop" class="modal-backdrop" role="dialog" aria-modal="true">
     <div class="host-modal">
       <div class="editor-head">
-        <div class="editor-title">Cloudflare R2 图床设置</div>
+        <div class="editor-title">七牛云图床设置</div>
         <button id="closeImageHostBtn" class="icon" type="button" title="关闭"><i data-lucide="x"></i></button>
       </div>
       <div class="host-body">
         <div class="field">
           <label>Worker 地址</label>
-          <input id="hostWorkerUrlInput" placeholder="https://你的-worker.workers.dev">
+          <input id="hostWorkerUrlInput" placeholder="https://你的七牛-token-worker.workers.dev">
         </div>
         <div class="host-grid">
           <div class="field">
             <label>上传密钥</label>
-            <input id="hostTokenInput" type="password" placeholder="Worker 环境变量 UPLOAD_TOKEN">
+            <input id="hostTokenInput" type="password" placeholder="Worker 上传口令 UPLOAD_TOKEN">
           </div>
           <div class="field">
             <label>文件名前缀</label>
@@ -988,7 +988,7 @@
           </div>
         </div>
         <div class="host-note">
-          密钥只保存在当前浏览器本地。真正的 R2 账号密钥放在 Cloudflare Worker 后台，不写进这个网页源码。
+          七牛 AK/SK 只保存在 Cloudflare Worker Secret 里，不写进这个网页源码。本地图片会先拿上传凭证，再由浏览器直传七牛云。
         </div>
       </div>
       <div class="host-actions">
@@ -1906,6 +1906,14 @@
       return clean.endsWith('/upload') ? clean : `${clean}/upload`;
     }
 
+    function getWorkerTokenUrl(workerUrl) {
+      return `${getWorkerBaseUrl(workerUrl)}/token`;
+    }
+
+    function getWorkerFetchUploadUrl(workerUrl) {
+      return `${getWorkerBaseUrl(workerUrl)}/fetch-upload`;
+    }
+
     function makeImageHostHeaders(config, json = false) {
       const headers = {};
       if (json) headers['Content-Type'] = 'application/json';
@@ -1926,10 +1934,10 @@
         const text = await response.text();
         if (!response.ok) throw new Error(text || `HTTP ${response.status}`);
         setHostStatus('连接正常');
-        setStatus('R2 图床连接正常');
+        setStatus('七牛云图床连接正常');
       } catch (error) {
         setHostStatus(`连接失败：${error.message}`);
-        setStatus('R2 图床连接失败');
+        setStatus('七牛云图床连接失败');
       }
     }
 
@@ -2015,19 +2023,57 @@
     }
 
     async function uploadBlobToImageHost(blob, filename, config) {
+      const tokenData = await requestQiniuUploadToken(blob, filename, config);
       const form = new FormData();
+      form.append('token', tokenData.token);
+      form.append('key', tokenData.key);
       form.append('file', blob, filename || 'image.png');
-      form.append('prefix', config.prefix || 'xiumi');
-      const response = await fetch(getWorkerUploadUrl(config.workerUrl), {
+      const response = await fetch(tokenData.uploadUrl, {
         method: 'POST',
-        headers: makeImageHostHeaders(config),
         body: form
       });
-      return readImageHostUrl(response);
+      const text = await response.text();
+      let data = {};
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch (error) {
+        data = { error: text };
+      }
+      if (!response.ok) {
+        throw new Error(data.error || data.message || text || `七牛 HTTP ${response.status}`);
+      }
+      return tokenData.url;
+    }
+
+    async function requestQiniuUploadToken(blob, filename, config) {
+      const response = await fetch(getWorkerTokenUrl(config.workerUrl), {
+        method: 'POST',
+        headers: makeImageHostHeaders(config, true),
+        body: JSON.stringify({
+          name: filename || 'image.png',
+          mimeType: blob.type || 'application/octet-stream',
+          size: blob.size || 0,
+          prefix: config.prefix || 'xiumi'
+        })
+      });
+      const text = await response.text();
+      let data = {};
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch (error) {
+        data = { error: text };
+      }
+      if (!response.ok) {
+        throw new Error(data.error || data.message || `HTTP ${response.status}`);
+      }
+      if (!data.token || !data.key || !data.uploadUrl || !data.url) {
+        throw new Error('Worker 没有返回完整的七牛上传凭证');
+      }
+      return data;
     }
 
     async function uploadRemoteImageToHost(sourceUrl, filename, config) {
-      const response = await fetch(getWorkerUploadUrl(config.workerUrl), {
+      const response = await fetch(getWorkerFetchUploadUrl(config.workerUrl), {
         method: 'POST',
         headers: makeImageHostHeaders(config, true),
         body: JSON.stringify({

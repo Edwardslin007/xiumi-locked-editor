@@ -1,13 +1,12 @@
-name = "xiumi-r2-image-host"
-main = "cloudflare-r2-worker.js"
+name = "xiumi-qiniu-image-host"
+main = "cloudflare-qiniu-worker.js"
 compatibility_date = "2026-07-01"
 workers_dev = true
-
-[[r2_buckets]]
-binding = "IMAGES_BUCKET"
-bucket_name = "xiumi-images"
 
 [vars]
 DEFAULT_PREFIX = "xiumi"
 MAX_BYTES = "20971520"
 ALLOWED_ORIGIN = "*"
+QINIU_BUCKET = "edwards20260706"
+QINIU_PUBLIC_DOMAIN = "http://thqcs8zxp.hn-bkt.clouddn.com"
+QINIU_UPLOAD_URL = "https://up-z2.qiniup.com"

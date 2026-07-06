@@ -9,7 +9,7 @@
 - 点击文字段落弹出编辑框，支持加粗、颜色、字号、对齐等常见格式。
 - 右侧自动列出图片，可查看地址、尺寸、格式和 alt 文本。
 - 支持本地图片替换、图片 URL 替换。
-- 支持 Cloudflare R2 + Worker 图床上传。
+- 支持七牛云 Kodo + Cloudflare Worker 上传凭证图床。
 - 支持源码模板、撤销/重做、一键复制完整源码。
 - 支持选择项目文件夹，把当前源码 HTML 保存到指定文件夹，并复制项目路径。
 
@@ -29,33 +29,31 @@ http://127.0.0.1:8765/index.html
 
 本仓库内置 `.github/workflows/pages.yml`。推送到 `main` 分支后，GitHub Actions 会自动部署静态页面。
 
-## Cloudflare Worker 图床
+## 七牛云图床
 
-1. 在 Cloudflare 创建 R2 Bucket，例如 `xiumi-images`。
-2. 部署 `cloudflare-r2-worker.js`。
-3. 在 Worker 绑定 R2：
+当前方案不依赖 Cloudflare R2。Cloudflare Worker 只负责保存七牛 AK/SK 并签发上传凭证，浏览器拿到凭证后直传七牛云。
+
+当前默认配置：
 
 ```text
-Variable name: IMAGES_BUCKET
-Bucket: xiumi-images
+Bucket: edwards20260706
+Public domain: http://thqcs8zxp.hn-bkt.clouddn.com
+Upload endpoint: https://up-z2.qiniup.com
 ```
 
-4. 设置 Worker Secret：
+部署 Worker：
 
 ```bash
+npx wrangler secret put QINIU_ACCESS_KEY
+npx wrangler secret put QINIU_SECRET_KEY
 npx wrangler secret put UPLOAD_TOKEN
+npx wrangler deploy
 ```
 
-5. 在网页工具里点击 `图床设置`，填写 Worker 地址、上传密钥、文件名前缀。
-
-详细步骤见：
-
-```text
-cloudflare-r2-setup.md
-```
+在网页工具里点击 `图床设置`，填写 Worker 地址、上传口令和文件名前缀。
 
 ## 安全说明
 
-- 不要把 R2 Access Key、Secret 或微信 AppSecret 写进 `index.html`。
-- 上传密钥只适合个人使用；如果公开给多人用，应接入登录鉴权、用量限制和域名限制。
+- 不要把七牛 `AccessKey` / `SecretKey` 或微信 AppSecret 写进 `index.html`。
+- 上传口令只适合个人使用；如果公开给多人用，应接入登录鉴权、用量限制和域名限制。
 - 微信公众号最终是否接受图片域名，建议先用测试草稿验证。
