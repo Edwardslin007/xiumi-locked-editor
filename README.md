@@ -37,6 +37,10 @@
 ```text
 .
 ├── index.html                     # 主应用，静态单页工具
+├── showcase.html                  # 10 套公众号排版公开展示页
+├── showcase-preview.html          # 单套排版截图预览页
+├── showcase-data.js               # 10 套排版数据和内联样式 HTML
+├── showcase-assets/               # 展示页图片和截图资源
 ├── cloudflare-qiniu-worker.js      # 七牛云 Kodo 上传凭证 Worker
 ├── cloudflare-qiniu-setup.md       # 七牛云图床配置说明
 ├── cloudflare-r2-worker.js         # 旧版/备用 R2 Worker 方案
@@ -213,6 +217,12 @@ Worker 访问口令：你设置的 UPLOAD_TOKEN
 
 ```text
 https://<github-user>.github.io/xiumi-locked-editor/
+```
+
+本仓库当前的 10 套公众号排版展示页：
+
+```text
+https://edwardslin007.github.io/xiumi-locked-editor/showcase.html
 ```
 
 注意：GitHub Pages 只能部署静态前端。图床签名能力必须另行部署 Cloudflare Worker。

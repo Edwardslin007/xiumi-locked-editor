@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>公众号排版截图预览</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #e8edf4; padding: 24px 0 40px; }
+    #articlePreview { width: 100%; }
+  </style>
+</head>
+<body>
+  <article id="articlePreview"></article>
+  <script src="showcase-data.js"></script>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const id = params.get('style') || '01';
+    const layout = (window.XIUMI_LAYOUTS || []).find((item) => item.id === id) || (window.XIUMI_LAYOUTS || [])[0];
+    document.title = layout ? layout.id + ' ' + layout.name + '｜公众号排版截图预览' : '公众号排版截图预览';
+    document.getElementById('articlePreview').innerHTML = layout ? layout.html : '';
+  </script>
+</body>
+</html>

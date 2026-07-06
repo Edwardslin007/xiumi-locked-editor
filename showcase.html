@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>守候时光的智慧｜10 套公众号排版</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --panel: #ffffff;
+      --line: #d9e0ea;
+      --text: #17202a;
+      --muted: #66758a;
+      --accent: #0f766e;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); }
+    .shell { max-width: 1160px; margin: 0 auto; padding: 26px 18px 48px; }
+    .top { display: flex; gap: 18px; align-items: flex-end; justify-content: space-between; margin-bottom: 18px; }
+    h1 { margin: 0; font-size: 28px; line-height: 1.25; letter-spacing: 0; }
+    .sub { margin: 8px 0 0; color: var(--muted); font-size: 14px; line-height: 1.7; }
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+    .action, .tab { border: 1px solid var(--line); background: #fff; color: var(--text); height: 36px; border-radius: 7px; padding: 0 12px; cursor: pointer; font: inherit; }
+    .action:hover, .tab:hover { border-color: #93a4b8; }
+    .action.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .tabs { display: flex; gap: 8px; overflow-x: auto; padding: 10px 0 14px; margin-bottom: 10px; }
+    .tab { flex: 0 0 auto; }
+    .tab.active { background: #e6f5f3; border-color: var(--accent); color: #0f766e; font-weight: 700; }
+    .meta { display: flex; justify-content: space-between; gap: 16px; align-items: center; color: var(--muted); font-size: 14px; margin: 0 0 14px; }
+    .workspace { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 18px; align-items: start; }
+    .preview-wrap { background: #e8edf4; border: 1px solid var(--line); padding: 24px 0; overflow: auto; }
+    .source-panel { background: var(--panel); border: 1px solid var(--line); padding: 14px; position: sticky; top: 14px; }
+    .source-panel h2 { margin: 0 0 10px; font-size: 16px; }
+    textarea { width: 100%; min-height: 460px; resize: vertical; border: 1px solid var(--line); border-radius: 6px; padding: 10px; font: 12px/1.5 ui-monospace, SFMono-Regular, Consolas, monospace; color: #26313f; }
+    @media (max-width: 960px) { .workspace { grid-template-columns: 1fr; } .source-panel { position: static; } .top { align-items: flex-start; flex-direction: column; } }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section class="top">
+      <div>
+        <h1>守候时光的智慧｜10 套公众号排版</h1>
+        <p class="sub">每个标签对应一套可复制源码的公众号图文排版，图片与正文均已排入版面。</p>
+      </div>
+      <div class="actions">
+        <button class="action primary" id="copySourceBtn" type="button">复制当前源码</button>
+        <a class="action" id="singleViewLink" href="showcase-preview.html?style=01" target="_blank" rel="noreferrer" style="display:inline-flex;align-items:center;text-decoration:none;">单版预览</a>
+      </div>
+    </section>
+    <nav class="tabs" id="tabs" aria-label="排版风格标签"></nav>
+    <section class="meta">
+      <span id="layoutName">01 青山茶韵</span>
+      <span id="layoutSummary">绿色自然系</span>
+    </section>
+    <section class="workspace">
+      <div class="preview-wrap">
+        <article id="articlePreview"></article>
+      </div>
+      <aside class="source-panel">
+        <h2>当前排版源码</h2>
+        <textarea id="sourceText" spellcheck="false"></textarea>
+      </aside>
+    </section>
+  </main>
+  <script src="showcase-data.js"></script>
+  <script>
+    const layouts = window.XIUMI_LAYOUTS || [];
+    const tabs = document.getElementById('tabs');
+    const preview = document.getElementById('articlePreview');
+    const sourceText = document.getElementById('sourceText');
+    const layoutName = document.getElementById('layoutName');
+    const layoutSummary = document.getElementById('layoutSummary');
+    const singleViewLink = document.getElementById('singleViewLink');
+
+    function selectLayout(id) {
+      const layout = layouts.find((item) => item.id === id) || layouts[0];
+      if (!layout) return;
+      preview.innerHTML = layout.html;
+      sourceText.value = layout.html;
+      layoutName.textContent = layout.id + ' ' + layout.name;
+      layoutSummary.textContent = layout.summary;
+      singleViewLink.href = 'showcase-preview.html?style=' + encodeURIComponent(layout.id);
+      tabs.querySelectorAll('.tab').forEach((button) => {
+        button.classList.toggle('active', button.dataset.id === layout.id);
+      });
+      if (location.hash !== '#style-' + layout.id) {
+        history.replaceState(null, '', '#style-' + layout.id);
+      }
+    }
+
+    for (const layout of layouts) {
+      const button = document.createElement('button');
+      button.className = 'tab';
+      button.type = 'button';
+      button.dataset.id = layout.id;
+      button.textContent = layout.id + ' ' + layout.name;
+      button.addEventListener('click', () => selectLayout(layout.id));
+      tabs.appendChild(button);
+    }
+
+    document.getElementById('copySourceBtn').addEventListener('click', async () => {
+      await navigator.clipboard.writeText(sourceText.value);
+    });
+
+    const hashId = (location.hash.match(/style-(\d+)/) || [])[1];
+    selectLayout(hashId || '01');
+  </script>
+</body>
+</html>
