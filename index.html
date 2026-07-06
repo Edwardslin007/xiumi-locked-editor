@@ -2380,24 +2380,27 @@
       }
       const html = getCleanHtml();
       try {
-        await writeClipboardHtml(html);
-        setStatus('完整源码已复制');
+        const mode = await writeClipboardHtml(html);
+        setStatus(mode === 'rich' ? '完整源码已复制' : '完整源码已复制（纯文本模式）');
       } catch (error) {
         setStatus('复制失败，浏览器不允许写入剪贴板');
       }
     }
 
     async function writeClipboardHtml(html) {
-      const plain = getBodyText(html);
       if (navigator.clipboard && window.ClipboardItem) {
         const item = new ClipboardItem({
           'text/html': new Blob([html], { type: 'text/html' }),
-          'text/plain': new Blob([plain || html], { type: 'text/plain' })
+          'text/plain': new Blob([html], { type: 'text/plain' })
         });
-        await navigator.clipboard.write([item]);
-        return;
+        try {
+          await navigator.clipboard.write([item]);
+          return 'rich';
+        } catch (error) {
+          return writeClipboardPlainText(html);
+        }
       }
-      await navigator.clipboard.writeText(html);
+      return writeClipboardPlainText(html);
     }
 
     async function writeClipboardSource(html) {
@@ -2406,10 +2409,32 @@
           'text/html': new Blob([html], { type: 'text/html' }),
           'text/plain': new Blob([html], { type: 'text/plain' })
         });
-        await navigator.clipboard.write([item]);
-        return;
+        try {
+          await navigator.clipboard.write([item]);
+          return 'rich';
+        } catch (error) {
+          return writeClipboardPlainText(html);
+        }
       }
-      await navigator.clipboard.writeText(html);
+      return writeClipboardPlainText(html);
+    }
+
+    async function writeClipboardPlainText(text) {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        return 'text';
+      }
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.setAttribute('readonly', '');
+      textarea.style.position = 'fixed';
+      textarea.style.left = '-9999px';
+      document.body.appendChild(textarea);
+      textarea.select();
+      const ok = document.execCommand('copy');
+      textarea.remove();
+      if (!ok) throw new Error('copy failed');
+      return 'legacy';
     }
 
     async function saveSourceFile() {
