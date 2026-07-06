@@ -969,18 +969,18 @@
   <div id="imageHostBackdrop" class="modal-backdrop" role="dialog" aria-modal="true">
     <div class="host-modal">
       <div class="editor-head">
-        <div class="editor-title">七牛云图床设置</div>
+        <div class="editor-title">七牛云 Kodo 图床设置</div>
         <button id="closeImageHostBtn" class="icon" type="button" title="关闭"><i data-lucide="x"></i></button>
       </div>
       <div class="host-body">
         <div class="field">
           <label>Worker 地址</label>
-          <input id="hostWorkerUrlInput" placeholder="https://你的七牛-token-worker.workers.dev">
+          <input id="hostWorkerUrlInput" placeholder="https://xiumi-qiniu-image-host.你的账号.workers.dev">
         </div>
         <div class="host-grid">
           <div class="field">
-            <label>上传密钥</label>
-            <input id="hostTokenInput" type="password" placeholder="Worker 上传口令 UPLOAD_TOKEN">
+            <label>Worker 访问口令</label>
+            <input id="hostTokenInput" type="password" placeholder="你在 Worker Secret 里设置的 UPLOAD_TOKEN">
           </div>
           <div class="field">
             <label>文件名前缀</label>
@@ -988,7 +988,7 @@
           </div>
         </div>
         <div class="host-note">
-          七牛 AK/SK 只保存在 Cloudflare Worker Secret 里，不写进这个网页源码。本地图片会先拿上传凭证，再由浏览器直传七牛云。
+          这里不填七牛 AK/SK。七牛 AK/SK 只放在 Cloudflare Worker Secret 里；本页只填 Worker 地址和 UPLOAD_TOKEN，用来向 Worker 换取临时上传凭证。
         </div>
       </div>
       <div class="host-actions">
